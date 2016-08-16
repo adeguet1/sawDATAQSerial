@@ -1,7 +1,7 @@
 Change log
 ==========
 
-1.0.0 (2016-09-01)
+0.0.0 (2016-00-00)
 ==================
 
 * API changes:
@@ -9,8 +9,6 @@ Change log
 * Deprecated features:
   * None
 * New features:
-  * cisstMultiTask component to interface with OptoForce force sensors
-  * text based example (any OS)
-  * catkin build compatible and ROS example publishes a Wrench message
+  * None
 * Bug fixes:
   * None

@@ -14,31 +14,31 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 
-#ifndef _mtsOptoforceSensor_h
-#define _mtsOptoforceSensor_h
+#ifndef _mtsDATAQSerial_h
+#define _mtsDATAQSerial_h
 
 #include <cisstMultiTask/mtsForwardDeclarations.h>
 #include <cisstMultiTask/mtsTaskContinuous.h>
 #include <cisstOSAbstraction/osaSerialPort.h>
 #include <cisstVector/vctFixedSizeVectorTypes.h>
 #include <cisstParameterTypes/prmForceCartesianGet.h>
-#include <sawOptoforceSensor/sawOptoforceSensorRevision.h>
+#include <sawDATAQSerial/sawDATAQSerialRevision.h>
 
 // Always include last
-#include <sawOptoforceSensor/sawOptoforceSensorExport.h>
+#include <sawDATAQSerial/sawDATAQSerialExport.h>
 
 // Following uses same naming convention as vctFixedSizeVectorTypes.h
 typedef vctFixedSizeMatrix<double, 3, 6> vctDouble3x6;
 typedef vctFixedSizeMatrix<double, 6, 3> vctDouble6x3;
 
-class CISST_EXPORT mtsOptoforce3D: public mtsTaskContinuous {
+class CISST_EXPORT mtsDATAQSerial: public mtsTaskContinuous {
 
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
  public:
-    mtsOptoforce3D(const std::string &name, unsigned int port);
-    mtsOptoforce3D(const std::string &name, const std::string &portName);
-    ~mtsOptoforce3D(void) {};
+    mtsDATAQSerial(const std::string &name, unsigned int port);
+    mtsDATAQSerial(const std::string &name, const std::string &portName);
+    ~mtsDATAQSerial(void) {};
     void Configure(const std::string &filename = "");
     void Startup(void);
     void Run(void);
@@ -81,8 +81,6 @@ class CISST_EXPORT mtsOptoforce3D: public mtsTaskContinuous {
     bool connected;
 };
 
+CMN_DECLARE_SERVICES_INSTANTIATION(mtsDATAQSerial);
 
-CMN_DECLARE_SERVICES_INSTANTIATION(mtsOptoforce3D);
-
-
-#endif // _mtsOptoforce3D_h
+#endif // _mtsDATAQSerial_h

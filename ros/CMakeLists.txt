@@ -11,7 +11,7 @@
 
 cmake_minimum_required (VERSION 2.8.3)
 
-project (optoforce_ros)
+project (dataq_serial_ros)
 
 ## find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -53,23 +53,23 @@ if (cisst_FOUND_AS_REQUIRED)
                   DEPENDS ${REQUIRED_CISST_LIBRARIES})
 
   # sawAtracsysFusionTrack has been compiled within cisst, we should find it automatically
-  find_package (sawOptoforceSensor 1.0.0)
+  find_package (sawDATAQSerial 1.0.0)
 
-  if (sawOptoforceSensor_FOUND)
+  if (sawDATAQSerial_FOUND)
 
     include_directories (${CATKIN_DEVEL_PREFIX}/include
-                         ${sawOptoforceSensor_INCLUDE_DIR})
+                         ${sawDATAQSerial_INCLUDE_DIR})
 
-    link_directories (${sawOptoforceSensor_LIBRARY_DIR})
+    link_directories (${sawDATAQSerial_LIBRARY_DIR})
 
-    add_executable (optoforce_json src/optoforce_json.cpp)
-    target_link_libraries (optoforce_json
-                           ${sawOptoforceSensor_LIBRARIES}
+    add_executable (dataq_serial_json src/dataq_serial_json.cpp)
+    target_link_libraries (dataq_serial_json
+                           ${sawDATAQSerial_LIBRARIES}
                            ${catkin_LIBRARIES})
-    cisst_target_link_libraries (optoforce_json ${REQUIRED_CISST_LIBRARIES})
+    cisst_target_link_libraries (dataq_serial_json ${REQUIRED_CISST_LIBRARIES})
 
-  else (sawOptoforceSensor_FOUND)
-    message ("Information: code in ${CMAKE_CURRENT_SOURCE_DIR} will not be compiled, it requires sawOptoforceSensor")
-  endif (sawOptoforceSensor_FOUND)
+  else (sawDATAQSerial_FOUND)
+    message ("Information: code in ${CMAKE_CURRENT_SOURCE_DIR} will not be compiled, it requires sawDATAQSerial")
+  endif (sawDATAQSerial_FOUND)
 
 endif (cisst_FOUND_AS_REQUIRED)

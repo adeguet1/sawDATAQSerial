@@ -4,18 +4,18 @@
 /*
   (C) Copyright 2016 Johns Hopkins University (JHU), All Rights Reserved.
 
---- begin cisst license - do not edit ---
+  --- begin cisst license - do not edit ---
 
-This software is provided "as is" under an open source license, with
-no warranty.  The complete license can be found in license.txt and
-http://www.cisst.org/cisst/license.txt.
+  This software is provided "as is" under an open source license, with
+  no warranty.  The complete license can be found in license.txt and
+  http://www.cisst.org/cisst/license.txt.
 
---- end cisst license ---
+  --- end cisst license ---
 */
 
 #include <cisstConfig.h>
 #include <cisstOSAbstraction/osaSleep.h>
-#include <sawOptoforceSensor/mtsOptoforce3D.h>
+#include <sawDATAQSerial/mtsDATAQSerial.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstNumerical/nmrGaussJordanInverse.h>
 #if CISST_HAS_JSON
@@ -27,35 +27,35 @@ http://www.cisst.org/cisst/license.txt.
 #endif
 
 
-CMN_IMPLEMENT_SERVICES_DERIVED(mtsOptoforce3D, mtsTaskContinuous);
+CMN_IMPLEMENT_SERVICES_DERIVED(mtsDATAQSerial, mtsTaskContinuous);
 
-mtsOptoforce3D::mtsOptoforce3D(const std::string &name, unsigned int port) : mtsTaskContinuous(name), 
+mtsDATAQSerial::mtsDATAQSerial(const std::string &name, unsigned int port) : mtsTaskContinuous(name),
                                                                              Length(0.0),
                                                                              bias(0.0), scale(1.0),
                                                                              matrix_a_valid(false),
                                                                              sensorSpeed(10),  // 100 Hz
-                                                                             sensorFilter(4),  // 15 Hz
-                                                                             sensorBias(0),    // unbias
-                                                                             configured(false), connected(false)
+    sensorFilter(4),  // 15 Hz
+    sensorBias(0),    // unbias
+    configured(false), connected(false)
 {
     serialPort.SetPortNumber(port);
     Init();
 }
 
-mtsOptoforce3D::mtsOptoforce3D(const std::string &name, const std::string &portName) : mtsTaskContinuous(name), 
+mtsDATAQSerial::mtsDATAQSerial(const std::string &name, const std::string &portName) : mtsTaskContinuous(name),
                                                                                        Length(0.0),
                                                                                        bias(0.0), scale(1.0),
                                                                                        matrix_a_valid(false),
                                                                                        sensorSpeed(10),  // 100 Hz
-                                                                                       sensorFilter(4),  // 15 Hz
-                                                                                       sensorBias(0),    // unbias
-                                                                                       configured(false), connected(false)
+    sensorFilter(4),  // 15 Hz
+    sensorBias(0),    // unbias
+    configured(false), connected(false)
 {
     serialPort.SetPortName(portName);
     Init();
 }
 
-void mtsOptoforce3D::Init(void)
+void mtsDATAQSerial::Init(void)
 {
     StateTable.AddData(Count, "Count");
     StateTable.AddData(Status, "Status");
@@ -73,16 +73,16 @@ void mtsOptoforce3D::Init(void)
         interfaceProvided->AddCommandReadState(StateTable, ForceTorque, "GetForceTorque");
         interfaceProvided->AddCommandReadState(StateTable, connected, "GetConnected");
         interfaceProvided->AddCommandReadState(StateTable, StateTable.Period, "GetTaskPeriod");
-        interfaceProvided->AddCommandRead(&mtsOptoforce3D::GetSensorConfig, this, "GetSensorConfig");
-        interfaceProvided->AddCommandWrite(&mtsOptoforce3D::SetSensorConfig, this, "SetSensorConfig");
-        interfaceProvided->AddCommandVoid(&mtsOptoforce3D::Rebias, this, "Rebias");
-        interfaceProvided->AddCommandVoid(&mtsOptoforce3D::Unbias, this, "Unbias");
-        interfaceProvided->AddCommandRead(&mtsOptoforce3D::GetBias, this, "GetBias");
-        interfaceProvided->AddCommandWrite(&mtsOptoforce3D::SetBias, this, "SetBias");
-        interfaceProvided->AddCommandRead(&mtsOptoforce3D::GetLength, this, "GetLength");
-        interfaceProvided->AddCommandWrite(&mtsOptoforce3D::SetLength, this, "SetLength");
-        interfaceProvided->AddCommandRead(&mtsOptoforce3D::GetScale, this, "GetScale");
-        interfaceProvided->AddCommandWrite(&mtsOptoforce3D::SetScale, this, "SetScale");
+        interfaceProvided->AddCommandRead(&mtsDATAQSerial::GetSensorConfig, this, "GetSensorConfig");
+        interfaceProvided->AddCommandWrite(&mtsDATAQSerial::SetSensorConfig, this, "SetSensorConfig");
+        interfaceProvided->AddCommandVoid(&mtsDATAQSerial::Rebias, this, "Rebias");
+        interfaceProvided->AddCommandVoid(&mtsDATAQSerial::Unbias, this, "Unbias");
+        interfaceProvided->AddCommandRead(&mtsDATAQSerial::GetBias, this, "GetBias");
+        interfaceProvided->AddCommandWrite(&mtsDATAQSerial::SetBias, this, "SetBias");
+        interfaceProvided->AddCommandRead(&mtsDATAQSerial::GetLength, this, "GetLength");
+        interfaceProvided->AddCommandWrite(&mtsDATAQSerial::SetLength, this, "SetLength");
+        interfaceProvided->AddCommandRead(&mtsDATAQSerial::GetScale, this, "GetScale");
+        interfaceProvided->AddCommandWrite(&mtsDATAQSerial::SetScale, this, "SetScale");
     }
 
     // Configure the serial port
@@ -102,7 +102,7 @@ void mtsOptoforce3D::Init(void)
     matrix_cal = vctDouble3x3::Eye();
 }
 
-void mtsOptoforce3D::Configure(const std::string &filename)
+void mtsDATAQSerial::Configure(const std::string &filename)
 {
     matrix_a_valid = false;
 #if CISST_HAS_JSON
@@ -169,7 +169,7 @@ void mtsOptoforce3D::Configure(const std::string &filename)
 #endif
 }
 
-void mtsOptoforce3D::Startup(void)
+void mtsDATAQSerial::Startup(void)
 {
     if (!configured) {
         CMN_LOG_CLASS_INIT_ERROR << "Startup: cannot start because component was not correctly configured" << std::endl;
@@ -188,7 +188,7 @@ void mtsOptoforce3D::Startup(void)
     }
 }
 
-void mtsOptoforce3D::Run(void)
+void mtsDATAQSerial::Run(void)
 {
     struct optopacket {
         unsigned char header[4];
@@ -280,7 +280,7 @@ void mtsOptoforce3D::Run(void)
                 Force = RawSensor - bias;
             }
             ForceTorque.SetForce(vctDouble6(Force.X(), Force.Y(), Force.Z(), 0.0, 0.0, 0.0));
-        }  
+        }
     }
     else {
         ForceTorque.SetValid(false);
@@ -288,7 +288,7 @@ void mtsOptoforce3D::Run(void)
     }
 }
 
-void mtsOptoforce3D::Cleanup(void)
+void mtsDATAQSerial::Cleanup(void)
 {
     // Close the port
     if (connected) {
@@ -297,7 +297,7 @@ void mtsOptoforce3D::Cleanup(void)
     }
 }
 
-void mtsOptoforce3D::SendCommand(unsigned char speed, unsigned char filter,
+void mtsDATAQSerial::SendCommand(unsigned char speed, unsigned char filter,
                                  unsigned char zero)
 {
     if (!connected)
@@ -332,7 +332,7 @@ void mtsOptoforce3D::SendCommand(unsigned char speed, unsigned char filter,
     //   CS0,CS1 are the checksum
 }
 
-void mtsOptoforce3D::SetSensorConfig(const vctUChar3 &parms)
+void mtsDATAQSerial::SetSensorConfig(const vctUChar3 &parms)
 {
     // Currently, not checking for valid values
     sensorSpeed = parms.X();
@@ -341,7 +341,7 @@ void mtsOptoforce3D::SetSensorConfig(const vctUChar3 &parms)
     SendCommand(sensorSpeed, sensorFilter, sensorBias);
 }
 
-void mtsOptoforce3D::GetSensorConfig(vctUChar3 &parms) const
+void mtsDATAQSerial::GetSensorConfig(vctUChar3 &parms) const
 {
     // Only returns local (shadow) copies, since there does not appear
     // to be a way to query the sensor.
@@ -353,34 +353,34 @@ void mtsOptoforce3D::GetSensorConfig(vctUChar3 &parms) const
 // Note that two consecutive calls to Rebias will not work;
 // it is necessary to call Unbias in between and wait at least
 // 2 msec before calling Rebias again.
-void mtsOptoforce3D::Rebias(void)
+void mtsDATAQSerial::Rebias(void)
 {
     sensorBias = 255;
     SendCommand(sensorSpeed, sensorFilter, sensorBias);
 }
 
-void mtsOptoforce3D::Unbias(void)
+void mtsDATAQSerial::Unbias(void)
 {
     sensorBias = 0;
     SendCommand(sensorSpeed, sensorFilter, sensorBias);
 }
 
-void mtsOptoforce3D::GetBias(vctDouble3 &b) const
+void mtsDATAQSerial::GetBias(vctDouble3 &b) const
 {
     b = bias;
 }
 
-void mtsOptoforce3D::SetBias(const vctDouble3 &b)
+void mtsDATAQSerial::SetBias(const vctDouble3 &b)
 {
     bias = b;
 }
 
-void mtsOptoforce3D::GetLength(vctDouble3 &len) const
+void mtsDATAQSerial::GetLength(vctDouble3 &len) const
 {
     len = Length;
 }
 
-void mtsOptoforce3D::SetLength(const vctDouble3 &len)
+void mtsDATAQSerial::SetLength(const vctDouble3 &len)
 {
     if (!matrix_a_valid) {
         CMN_LOG_CLASS_RUN_WARNING << "SetLength: matrix_a is not valid (length ignored)" << std::endl;
@@ -411,12 +411,12 @@ void mtsOptoforce3D::SetLength(const vctDouble3 &len)
         CMN_LOG_CLASS_RUN_WARNING << "SetLength: calibration matrix is singular" << std::endl;
 }
 
-void mtsOptoforce3D::GetScale(vctDouble3 &s) const
+void mtsDATAQSerial::GetScale(vctDouble3 &s) const
 {
     s = scale;
 }
 
-void mtsOptoforce3D::SetScale(const vctDouble3 &s)
+void mtsDATAQSerial::SetScale(const vctDouble3 &s)
 {
     scale = s;
 }

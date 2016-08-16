@@ -1,12 +1,12 @@
 <package>
-  <name>saw_optoforce_sensor</name>
+  <name>saw_dataq_serial</name>
   <version>1.0.0</version>
   <description>
   sawOptoforceSensor
   </description>
-  <maintainer email="pkaz@jhu.edu">Peter Kazanzides</maintainer>
+  <maintainer email="anton.deguet@jhu.edu">Anton Deguet</maintainer>
   <license>cisst</license>
-  <url>https://github.com/jhu-saw/sawOptoforceSensor</url>
+  <url>https://github.com/jhu-saw/sawDATAQSerial</url>
 
   <build_depend>cisst</build_depend>
   <run_depend>cisst</run_depend>

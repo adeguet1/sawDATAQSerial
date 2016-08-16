@@ -9,7 +9,7 @@
 #
 # --- end cisst license ---
 
-project (sawOptoforceSensor)
+project (sawDATAQSerial)
 
 cmake_minimum_required (VERSION 2.8)
 
@@ -29,67 +29,67 @@ if (cisst_FOUND_AS_REQUIRED)
   include (${CISST_USE_FILE})
 
   # catkin/ROS paths
-  cisst_is_catkin_build (sawOptoforceSensor_IS_CATKIN_BUILT)
-  if (sawOptoforceSensor_IS_CATKIN_BUILT)
-    set (sawOptoforceSensor_CONFIG_FILE_DIR "${CATKIN_DEVEL_PREFIX}/share/sawOptoforceSensor/cmake")
-    set (LIBRARY_OUTPUT_PATH "${sawOptoforceSensor_BINARY_DIR}/lib")
+  cisst_is_catkin_build (sawDATAQSerial_IS_CATKIN_BUILT)
+  if (sawDATAQSerial_IS_CATKIN_BUILT)
+    set (sawDATAQSerial_CONFIG_FILE_DIR "${CATKIN_DEVEL_PREFIX}/share/sawDATAQSerial/cmake")
+    set (LIBRARY_OUTPUT_PATH "${sawDATAQSerial_BINARY_DIR}/lib")
   else ()
-    set (sawOptoforceSensor_CONFIG_FILE_DIR "${sawOptoforceSensor_BINARY_DIR}")
+    set (sawDATAQSerial_CONFIG_FILE_DIR "${sawDATAQSerial_BINARY_DIR}")
   endif ()
 
-  # create/configure file for find_package (sawOptoforceSensor)
-  set (sawOptoforceSensor_INCLUDE_DIR
-       "${sawOptoforceSensor_SOURCE_DIR}/include"
-       "${sawOptoforceSensor_BINARY_DIR}/include")
-  set (sawOptoforceSensor_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
-  set (sawOptoforceSensor_LIBRARIES sawOptoforceSensor)
+  # create/configure file for find_package (sawDATAQSerial)
+  set (sawDATAQSerial_INCLUDE_DIR
+       "${sawDATAQSerial_SOURCE_DIR}/include"
+       "${sawDATAQSerial_BINARY_DIR}/include")
+  set (sawDATAQSerial_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
+  set (sawDATAQSerial_LIBRARIES sawDATAQSerial)
 
   # Set the version number
-  set (sawOptoforceSensor_VERSION_MAJOR "1")
-  set (sawOptoforceSensor_VERSION_MINOR "0")
-  set (sawOptoforceSensor_VERSION_PATCH "0")
-  set (sawOptoforceSensor_VERSION "${sawOptoforceSensor_VERSION_MAJOR}.${sawOptoforceSensor_VERSION_MINOR}.${sawOptoforceSensor_VERSION_PATCH}")
+  set (sawDATAQSerial_VERSION_MAJOR "1")
+  set (sawDATAQSerial_VERSION_MINOR "0")
+  set (sawDATAQSerial_VERSION_PATCH "0")
+  set (sawDATAQSerial_VERSION "${sawDATAQSerial_VERSION_MAJOR}.${sawDATAQSerial_VERSION_MINOR}.${sawDATAQSerial_VERSION_PATCH}")
 
-  # Generate sawOptoforceSensorRevision.h
-  configure_file ("${sawOptoforceSensor_SOURCE_DIR}/code/sawOptoforceSensorRevision.h.in"
-                  "${sawOptoforceSensor_BINARY_DIR}/include/sawOptoforceSensor/sawOptoforceSensorRevision.h")
+  # Generate sawDATAQSerialRevision.h
+  configure_file ("${sawDATAQSerial_SOURCE_DIR}/code/sawDATAQSerialRevision.h.in"
+                  "${sawDATAQSerial_BINARY_DIR}/include/sawDATAQSerial/sawDATAQSerialRevision.h")
 
-  include_directories (${sawOptoforceSensor_INCLUDE_DIR})
-  set (sawOptoforceSensor_HEADER_DIR "${sawOptoforceSensor_SOURCE_DIR}/include/sawOptoforceSensor")
-  add_library (sawOptoforceSensor
-               code/mtsOptoforce3D.cpp
-               ${sawOptoforceSensor_HEADER_DIR}/sawOptoforceSensorExport.h
-               ${sawOptoforceSensor_HEADER_DIR}/mtsOptoforce3D.h
-               ${sawOptoforceSensor_BINARY_DIR}/include/sawOptoforceSensor/sawOptoforceSensorRevision.h)
+  include_directories (${sawDATAQSerial_INCLUDE_DIR})
+  set (sawDATAQSerial_HEADER_DIR "${sawDATAQSerial_SOURCE_DIR}/include/sawDATAQSerial")
+  add_library (sawDATAQSerial
+               code/mtsDATAQSerial.cpp
+               ${sawDATAQSerial_HEADER_DIR}/sawDATAQSerialExport.h
+               ${sawDATAQSerial_HEADER_DIR}/mtsDATAQSerial.h
+               ${sawDATAQSerial_BINARY_DIR}/include/sawDATAQSerial/sawDATAQSerialRevision.h)
 
-  set_property (TARGET sawOptoforceSensor PROPERTY FOLDER "sawOptoforceSensor")
-  cisst_target_link_libraries (sawOptoforceSensor ${REQUIRED_CISST_LIBRARIES})
+  set_property (TARGET sawDATAQSerial PROPERTY FOLDER "sawDATAQSerial")
+  cisst_target_link_libraries (sawDATAQSerial ${REQUIRED_CISST_LIBRARIES})
 
-  set (sawOptoforceSensor_CMAKE_CONFIG_FILE
-       "${sawOptoforceSensor_CONFIG_FILE_DIR}/sawOptoforceSensorConfig.cmake")
+  set (sawDATAQSerial_CMAKE_CONFIG_FILE
+       "${sawDATAQSerial_CONFIG_FILE_DIR}/sawDATAQSerialConfig.cmake")
 
-  configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/cmake/sawOptoforceSensorConfig.cmake.in"
-                  "${sawOptoforceSensor_CMAKE_CONFIG_FILE}"
+  configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/cmake/sawDATAQSerialConfig.cmake.in"
+                  "${sawDATAQSerial_CMAKE_CONFIG_FILE}"
                   @ONLY)
 
-  cisst_add_config_version ("${sawOptoforceSensor_CONFIG_FILE_DIR}/sawOptoforceSensorConfigVersion.cmake"
-                            VERSION ${sawOptoforceSensor_VERSION}
-                            DESTINATION "share/sawOptoforceSensor"
-                            COMPONENT sawOptoforceSensor)
+  cisst_add_config_version ("${sawDATAQSerial_CONFIG_FILE_DIR}/sawDATAQSerialConfigVersion.cmake"
+                            VERSION ${sawDATAQSerial_VERSION}
+                            DESTINATION "share/sawDATAQSerial"
+                            COMPONENT sawDATAQSerial)
 
   # Install target for headers and library
-  install (DIRECTORY "${sawOptoforceSensor_SOURCE_DIR}/include/sawOptoforceSensor"
-                     "${sawOptoforceSensor_BINARY_DIR}/include/sawOptoforceSensor"
+  install (DIRECTORY "${sawDATAQSerial_SOURCE_DIR}/include/sawDATAQSerial"
+                     "${sawDATAQSerial_BINARY_DIR}/include/sawDATAQSerial"
            DESTINATION include
            PATTERN .svn EXCLUDE)
 
-  install (TARGETS sawOptoforceSensor
+  install (TARGETS sawDATAQSerial
            RUNTIME DESTINATION bin
            LIBRARY DESTINATION lib
            ARCHIVE DESTINATION lib)
 
-  install (FILES "${sawOptoforceSensor_CMAKE_CONFIG_FILE}"
-           DESTINATION "share/sawOptoforceSensor")
+  install (FILES "${sawDATAQSerial_CMAKE_CONFIG_FILE}"
+           DESTINATION "share/sawDATAQSerial")
 
 else (cisst_FOUND_AS_REQUIRED)
   message ("Information: code in ${CMAKE_CURRENT_SOURCE_DIR} will not be compiled, it requires ${REQUIRED_CISST_LIBRARIES}")

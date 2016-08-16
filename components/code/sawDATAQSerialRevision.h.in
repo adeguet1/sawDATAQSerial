@@ -17,12 +17,12 @@ http://www.cisst.org/cisst/license.txt.
 
 #pragma once
 
-#ifndef _sawOptoforceSensorRevision_h
-#define _sawOptoforceSensorRevision_h
+#ifndef _sawDATAQSerialRevision_h
+#define _sawDATAQSerialRevision_h
 
-#define sawOptoforceSensor_VERSION_MAJOR @sawOptoforceSensor_VERSION_MAJOR@
-#define sawOptoforceSensor_VERSION_MINOR @sawOptoforceSensor_VERSION_MINOR@
-#define sawOptoforceSensor_VERSION_PATCH @sawOptoforceSensor_VERSION_PATCH@
-#define sawOptoforceSensor_VERSION "@sawOptoforceSensor_VERSION@"
+#define sawDATAQSerial_VERSION_MAJOR @sawDATAQSerial_VERSION_MAJOR@
+#define sawDATAQSerial_VERSION_MINOR @sawDATAQSerial_VERSION_MINOR@
+#define sawDATAQSerial_VERSION_PATCH @sawDATAQSerial_VERSION_PATCH@
+#define sawDATAQSerial_VERSION "@sawDATAQSerial_VERSION@"
 
-#endif // _sawOptoforceSensorRevision_h
+#endif // _sawDATAQSerialRevision_h
