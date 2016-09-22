@@ -15,98 +15,48 @@
 
 #include <cisstConfig.h>
 #include <cisstOSAbstraction/osaSleep.h>
+
 #include <sawDATAQSerial/mtsDATAQSerial.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
-#include <cisstNumerical/nmrGaussJordanInverse.h>
-#if CISST_HAS_JSON
-#include <cisstVector/vctDataFunctionsFixedSizeVectorJSON.h>
-#include <cisstVector/vctDataFunctionsFixedSizeMatrixJSON.h>
-#endif
-#if (CISST_OS != CISST_WINDOWS)
-#include <byteswap.h>
-#endif
-
 
 CMN_IMPLEMENT_SERVICES_DERIVED(mtsDATAQSerial, mtsTaskContinuous);
 
-mtsDATAQSerial::mtsDATAQSerial(const std::string &name, unsigned int port) : mtsTaskContinuous(name),
-                                                                             Length(0.0),
-                                                                             bias(0.0), scale(1.0),
-                                                                             matrix_a_valid(false),
-                                                                             sensorSpeed(10),  // 100 Hz
-    sensorFilter(4),  // 15 Hz
-    sensorBias(0),    // unbias
-    configured(false), connected(false)
+mtsDATAQSerial::mtsDATAQSerial(const std::string & name, const unsigned int portNumber):
+    mtsTaskContinuous(name)
 {
-    serialPort.SetPortNumber(port);
+    mSerialPort.SetPortNumber(portNumber);
     Init();
 }
 
-mtsDATAQSerial::mtsDATAQSerial(const std::string &name, const std::string &portName) : mtsTaskContinuous(name),
-                                                                                       Length(0.0),
-                                                                                       bias(0.0), scale(1.0),
-                                                                                       matrix_a_valid(false),
-                                                                                       sensorSpeed(10),  // 100 Hz
-    sensorFilter(4),  // 15 Hz
-    sensorBias(0),    // unbias
-    configured(false), connected(false)
+mtsDATAQSerial::mtsDATAQSerial(const std::string & name, const std::string & portName):
+    mtsTaskContinuous(name)
 {
-    serialPort.SetPortName(portName);
+    mSerialPort.SetPortName(portName);
     Init();
 }
 
 void mtsDATAQSerial::Init(void)
 {
-    StateTable.AddData(Count, "Count");
-    StateTable.AddData(Status, "Status");
-    StateTable.AddData(RawSensor, "ForceRaw");
-    StateTable.AddData(Force, "Force");
-    StateTable.AddData(ForceTorque, "ForceTorque");
-    StateTable.AddData(connected, "Connected");
+    mConfigured = false;
+    mConfigured = false;
 
-    mtsInterfaceProvided * interfaceProvided = this->AddInterfaceProvided("Force");
+#if 0
+    StateTable.AddData(Count, "Count");
+
+    mtsInterfaceProvided * interfaceProvided = this->AddInterfaceProvided("DAQ");
     if (interfaceProvided) {
         interfaceProvided->AddCommandReadState(StateTable, Count, "GetCount");
-        interfaceProvided->AddCommandReadState(StateTable, Status, "GetStatus");
-        interfaceProvided->AddCommandReadState(StateTable, RawSensor, "GetForceRaw");
-        interfaceProvided->AddCommandReadState(StateTable, Force, "GetForce");
-        interfaceProvided->AddCommandReadState(StateTable, ForceTorque, "GetForceTorque");
-        interfaceProvided->AddCommandReadState(StateTable, connected, "GetConnected");
-        interfaceProvided->AddCommandReadState(StateTable, StateTable.Period, "GetTaskPeriod");
-        interfaceProvided->AddCommandRead(&mtsDATAQSerial::GetSensorConfig, this, "GetSensorConfig");
         interfaceProvided->AddCommandWrite(&mtsDATAQSerial::SetSensorConfig, this, "SetSensorConfig");
         interfaceProvided->AddCommandVoid(&mtsDATAQSerial::Rebias, this, "Rebias");
-        interfaceProvided->AddCommandVoid(&mtsDATAQSerial::Unbias, this, "Unbias");
-        interfaceProvided->AddCommandRead(&mtsDATAQSerial::GetBias, this, "GetBias");
-        interfaceProvided->AddCommandWrite(&mtsDATAQSerial::SetBias, this, "SetBias");
-        interfaceProvided->AddCommandRead(&mtsDATAQSerial::GetLength, this, "GetLength");
-        interfaceProvided->AddCommandWrite(&mtsDATAQSerial::SetLength, this, "SetLength");
-        interfaceProvided->AddCommandRead(&mtsDATAQSerial::GetScale, this, "GetScale");
-        interfaceProvided->AddCommandWrite(&mtsDATAQSerial::SetScale, this, "SetScale");
     }
-
-    // Configure the serial port
-    serialPort.SetBaudRate(osaSerialPort::BaudRate115200);
-    serialPort.SetCharacterSize(osaSerialPort::CharacterSize8);
-    serialPort.SetParityChecking(osaSerialPort::ParityCheckingNone);
-    serialPort.SetStopBits(osaSerialPort::StopBitsOne);
-    serialPort.SetFlowControl(osaSerialPort::FlowControlNone);
-
-    // Initialize the constant terms in matrix_l
-    matrix_l.SetAll(0);
-    matrix_l[0][0] = 1;
-    matrix_l[1][1] = 1;
-    matrix_l[2][2] = 1;
-
-    // Initialize matrix_cal to the identity
-    matrix_cal = vctDouble3x3::Eye();
+#endif
 }
 
-void mtsDATAQSerial::Configure(const std::string &filename)
+void mtsDATAQSerial::Configure(const std::string & filename)
 {
-    matrix_a_valid = false;
-#if CISST_HAS_JSON
-    configured = false;
+    mConfigured = true;  // remove this line once we have proper JSON parsing
+#if 0
+    mConfigured = false;
     try {
         std::ifstream jsonStream;
         Json::Value jsonConfig;
@@ -126,122 +76,109 @@ void mtsDATAQSerial::Configure(const std::string &filename)
             cmnDataJSON<vctDouble3>::DeSerializeText(scale, jsonScale);
             CMN_LOG_CLASS_INIT_VERBOSE << "Configure: parsed scale = " << scale << std::endl;
         }
-        const Json::Value jsonSpeed = jsonConfig["speed"];
-        if (jsonSpeed.isNull()) {
-            CMN_LOG_CLASS_INIT_VERBOSE << "Configure: \"speed\" (update rate from sensor) not specified,"
-                                       << " using default value of " << sensorSpeed << std::endl;
-        } else {
-            sensorSpeed = static_cast<unsigned char>(jsonSpeed.asUInt());
-            CMN_LOG_CLASS_INIT_VERBOSE << "Configure: parsed speed (update rate from sensor) = "
-                                       << sensorSpeed << std::endl;
-        }
-        const Json::Value jsonFilter = jsonConfig["filter"];
-        if (jsonFilter.isNull()) {
-            CMN_LOG_CLASS_INIT_VERBOSE << "Configure: \"filter\" (cutoff frequency) not specified,"
-                                       << " using default value of " << sensorFilter << std::endl;
-        } else {
-            sensorFilter = static_cast<unsigned char>(jsonFilter.asUInt());
-            CMN_LOG_CLASS_INIT_VERBOSE << "Configure: parsed filter (cutoff frequency) = "
-                                       << sensorFilter << std::endl;
-        }
-        const Json::Value jsonCalMatrix = jsonConfig["cal-matrix"];
-        if (jsonCalMatrix.isNull()) {
-            CMN_LOG_CLASS_INIT_VERBOSE << "Configure: \"cal-matrix\" not specified" << std::endl;
-        } else {
-            cmnDataJSON<vctDouble3x6>::DeSerializeText(matrix_a, jsonCalMatrix);
-            matrix_a_valid = true;
-            CMN_LOG_CLASS_INIT_VERBOSE << "Configure: parsed cal-matrix (A) = " << std::endl
-                                       << matrix_a << std::endl;
-        }
         configured = true;
-    } catch (const std::runtime_error &e) {
+    } catch (const std::runtime_error & e) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure: runtime_error parsing JSON file: "
                                  << e.what() << std::endl;
     } catch (...) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure: make sure file \""
                                  << filename << "\" is in JSON format" << std::endl;
     }
-#else
-    // If cisst is not compiled with JSON support, the software returns the raw force values by default.
-    CMN_LOG_CLASS_INIT_WARNING << "Configure: JSON support not enabled in cisst, setting scale to 1" << std::endl;
-    scale.SetAll(1.0);
-    configured = true;
 #endif
 }
 
 void mtsDATAQSerial::Startup(void)
 {
-    if (!configured) {
+    if (!mConfigured) {
         CMN_LOG_CLASS_INIT_ERROR << "Startup: cannot start because component was not correctly configured" << std::endl;
-    }
-    else {
-        // true --> open serial port in blocking mode
-        if (!serialPort.Open(true)) {
-            CMN_LOG_CLASS_INIT_ERROR << "Cannot open serial port: " << serialPort.GetPortName() << std::endl;
-        }
-        else {
-            connected = true;
-            CMN_LOG_CLASS_INIT_VERBOSE << "Serial Port " << serialPort.GetPortName() << " successfully opened" << std::endl;
-            // Send the speed, filter, and bias to the sensor so we know how it is configured
-            SendCommand(sensorSpeed, sensorFilter, sensorBias);
+    } else {
+        if (!mSerialPort.Open()) {
+            CMN_LOG_CLASS_INIT_ERROR << "Startup: cannot open serial port: "
+                                     << mSerialPort.GetPortName() << std::endl;
+        } else {
+            CMN_LOG_CLASS_INIT_VERBOSE << "Startup: serial port "
+                                       << mSerialPort.GetPortName()
+                                       << " successfully opened" << std::endl;
+
+            // query system configuration
+            char buffer[256];
+            int nbRead;
+            std::string read, expected;
+
+            // check manufacturer
+            mSerialPort.Write("info 0\r", 7);
+            nbRead = mSerialPort.Read(buffer, 256);
+            // replace the carriage return by end of line
+            buffer[nbRead - 1] = '\0';
+            read = buffer;
+            expected = "info 0 DATAQ";
+            if (read != expected) {
+                CMN_LOG_CLASS_INIT_ERROR << "Startup: cannot check manufacturer, command `info 0` should return `DATAQ`"
+                                         << std::endl;
+                return;
+            }
+
+            // check model name
+            mSerialPort.Write("info 1\r", 7);
+            nbRead = mSerialPort.Read(buffer, 256);
+            // replace the carriage return by end of line
+            buffer[nbRead - 1] = '\0';
+            read = buffer;
+            if (read.compare(0, 6, "info 1") != 0) {
+                CMN_LOG_CLASS_INIT_ERROR << "Startup: failed to get answer for command `info 1`"
+                                         << std::endl;
+                return;
+            }
+            // model number
+            mModel = read.substr(7, nbRead - 8); // start after info 1 + space
+            CMN_LOG_CLASS_INIT_VERBOSE << "Startup: found DATAQ model ["
+                                       << mModel << "]" << std::endl;
+
+            // check firmware revision
+            mSerialPort.Write("info 2\r", 7);
+            nbRead = mSerialPort.Read(buffer, 256);
+            // replace the carriage return by end of line
+            buffer[nbRead - 1] = '\0';
+            read = buffer;
+            if (read.compare(0, 6, "info 2") != 0) {
+                CMN_LOG_CLASS_INIT_ERROR << "Startup: failed to get answer for command `info 2`"
+                                         << std::endl;
+                return;
+            }
+            // extract model number
+            std::stringstream stream;
+            stream << std::hex << buffer[7] << buffer[8];
+            stream >> mFirmware;
+            CMN_LOG_CLASS_INIT_VERBOSE << "Startup: found firmware revision ["
+                                       << mFirmware << "]" << std::endl;
+            
+            // check serial number
+            mSerialPort.Write("info 6\r", 7);
+            nbRead = mSerialPort.Read(buffer, 256);
+            // replace the carriage return by end of line
+            buffer[nbRead - 1] = '\0';
+            read = buffer;
+            if (read.compare(0, 6, "info 6") != 0) {
+                CMN_LOG_CLASS_INIT_ERROR << "Startup: failed to get answer for command `info 6`"
+                                         << std::endl;
+                return;
+            }
+            // serial number
+            mSerialNumber = read.substr(7, nbRead - 10); // start after info 1 + space and last 2 digits are for internal use, not part of SN
+            CMN_LOG_CLASS_INIT_VERBOSE << "Startup: found serial number ["
+                                       << mSerialNumber << "]" << std::endl;
+
+            mConnected = true;
         }
     }
 }
 
 void mtsDATAQSerial::Run(void)
 {
-    struct optopacket {
-        unsigned char header[4];
-        unsigned short count;
-        unsigned short status;
-        short fx;
-        short fy;
-        short fz;
-        unsigned short checksum;
-    };
-
-    union PacketDataType {
-        unsigned char bytes[16];
-        optopacket packet;
-    };
-
-    PacketDataType buffer;
     ProcessQueuedCommands();
 
-    if (connected) {
-        bool found = false;
-        unsigned short recvChecksum;
-#if (CISST_OS == CISST_WINDOWS)
-        // On Windows, serialPort.Read seems to always return the requested number
-        // of characters, which is sizeof(buffer).
-        // Thus, we have to check whether part of the expected packet has been combined
-        // with another packet, such as the 7 byte response to the command sent to the sensor.
-        int n = serialPort.Read((char *)&buffer, sizeof(buffer));
-        while (!found) {
-            for (int i = 0; i < n - 3; i++) {
-                if ((buffer.bytes[i] == 170) && (buffer.bytes[i + 1] == 7)
-                    && (buffer.bytes[i + 2] == 8) && (buffer.bytes[i + 3] == 10)) {
-                    if (i != 0) {                               // If pattern not found at beginning of buffer
-                        memmove(buffer.bytes, buffer.bytes + i, n - i);    //    shift so that 170 is in buffer[0]
-                        serialPort.Read(buffer.bytes + n - i, i);          //    fill the rest of the buffer
-                    }
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {                                       // If pattern not yet found
-                memmove(buffer.bytes, buffer.bytes + n - 4, 4);               //    move last 4 characters to beginning of buffer
-                serialPort.Read(buffer.bytes + 4, sizeof(buffer.bytes) - 4);  //    get another 12 characters
-            }
-        }
-        // Now, process the data
-        RawSensor.X() = (double)static_cast<short>(_byteswap_ushort(buffer.packet.fx)) * scale.X();
-        RawSensor.Y() = (double)static_cast<short>(_byteswap_ushort(buffer.packet.fy)) * scale.Y();
-        RawSensor.Z() = (double)static_cast<short>(_byteswap_ushort(buffer.packet.fz)) * scale.Z();
-        Count = _byteswap_ushort(buffer.packet.count);
-        Status = _byteswap_ushort(buffer.packet.status);
-        recvChecksum = _byteswap_ushort(buffer.packet.checksum);
-#else
+    if (mConnected) {
+#if 0
         // On Linux, serialPort.Read seems to return a complete packet, even if it is less than the
         // requested size.
         // Thus, we can discard packets that are not the correct size.
@@ -256,167 +193,15 @@ void mtsDATAQSerial::Run(void)
         RawSensor.X() = (double)static_cast<short>(bswap_16(buffer.packet.fx)) * scale.X();
         RawSensor.Y() = (double)static_cast<short>(bswap_16(buffer.packet.fy)) * scale.Y();
         RawSensor.Z() = (double)static_cast<short>(bswap_16(buffer.packet.fz)) * scale.Z();
-        Count = bswap_16(buffer.packet.count);
-        Status = bswap_16(buffer.packet.status);
-        recvChecksum = bswap_16(buffer.packet.checksum);
 #endif
-        // Verify the checksum (last 2 bytes).
-        unsigned short checksum = buffer.bytes[0];
-        for (size_t i = 1; i < sizeof(buffer)-2; i++)
-            checksum += buffer.bytes[i];
-        // (Status == 0) means no errors or overload warnings.
-        // For now, we check ((Status&0xFC00) == 0), which ignores overload warnings.
-        bool valid = (checksum == recvChecksum) && ((Status&0xFC00) == 0);
-        ForceTorque.SetValid(valid);
-
-        if (valid) {
-            if (matrix_a_valid) {
-                // Obtain forces by applying the calibration matrix, which depends on sensor-specific calibration
-                // values (A) and the assumed length to where the forces are applied (Length), which determines matrix_l (L).
-                // The calibration matrix, matrix_cal, is equal to inv(A*L)
-                Force = matrix_cal*RawSensor - bias;  // F = inv(A*L)*S - bias
-            }
-            else {
-                Force = RawSensor - bias;
-            }
-            ForceTorque.SetForce(vctDouble6(Force.X(), Force.Y(), Force.Z(), 0.0, 0.0, 0.0));
-        }
-    }
-    else {
-        ForceTorque.SetValid(false);
-        osaSleep(0.1);  // If not connected, wait
     }
 }
 
 void mtsDATAQSerial::Cleanup(void)
 {
     // Close the port
-    if (connected) {
-        serialPort.Close();
-        connected = false;
+    if (mConnected) {
+        mSerialPort.Close();
+        mConnected = false;
     }
-}
-
-void mtsDATAQSerial::SendCommand(unsigned char speed, unsigned char filter,
-                                 unsigned char zero)
-{
-    if (!connected)
-        return;
-
-    struct configpacket {
-        unsigned char header[4];
-        unsigned char speed;
-        unsigned char filter;
-        unsigned char zero;
-        unsigned char checksum[2];
-    };
-    configpacket Buffer;
-    // Send command via serial port
-
-    Buffer.header[0] = 170;
-    Buffer.header[1] = 0;
-    Buffer.header[2] = 50;
-    Buffer.header[3] = 3;
-    Buffer.speed = speed;
-    Buffer.filter = filter;
-    Buffer.zero = zero;
-    unsigned short checksum = 223 + speed + filter + zero;
-    Buffer.checksum[0] = (checksum >> 8)&0x00ff;
-    Buffer.checksum[1] = checksum&0x00ff;
-
-    serialPort.Write((char*)&Buffer, sizeof(Buffer));
-
-    // Optoforce sensor returns a packet with 7 bytes
-    // 170 0 80 1 X CS0 CS1
-    //   The X byte is 0 if no error.
-    //   CS0,CS1 are the checksum
-}
-
-void mtsDATAQSerial::SetSensorConfig(const vctUChar3 &parms)
-{
-    // Currently, not checking for valid values
-    sensorSpeed = parms.X();
-    sensorFilter = parms.Y();
-    sensorBias = parms.Z();
-    SendCommand(sensorSpeed, sensorFilter, sensorBias);
-}
-
-void mtsDATAQSerial::GetSensorConfig(vctUChar3 &parms) const
-{
-    // Only returns local (shadow) copies, since there does not appear
-    // to be a way to query the sensor.
-    parms.X() = sensorSpeed;
-    parms.Y() = sensorFilter;
-    parms.Z() = sensorBias;
-}
-
-// Note that two consecutive calls to Rebias will not work;
-// it is necessary to call Unbias in between and wait at least
-// 2 msec before calling Rebias again.
-void mtsDATAQSerial::Rebias(void)
-{
-    sensorBias = 255;
-    SendCommand(sensorSpeed, sensorFilter, sensorBias);
-}
-
-void mtsDATAQSerial::Unbias(void)
-{
-    sensorBias = 0;
-    SendCommand(sensorSpeed, sensorFilter, sensorBias);
-}
-
-void mtsDATAQSerial::GetBias(vctDouble3 &b) const
-{
-    b = bias;
-}
-
-void mtsDATAQSerial::SetBias(const vctDouble3 &b)
-{
-    bias = b;
-}
-
-void mtsDATAQSerial::GetLength(vctDouble3 &len) const
-{
-    len = Length;
-}
-
-void mtsDATAQSerial::SetLength(const vctDouble3 &len)
-{
-    if (!matrix_a_valid) {
-        CMN_LOG_CLASS_RUN_WARNING << "SetLength: matrix_a is not valid (length ignored)" << std::endl;
-        return;
-    }
-
-    Length = len;
-
-    // Update matrix_l elements that depend on length
-    matrix_l[3][1] = Length.Z();
-    matrix_l[3][2] = -Length.Y();
-    matrix_l[4][0] = -Length.Z();
-    matrix_l[4][2] = Length.X();
-    matrix_l[5][0] = Length.Y();
-    matrix_l[5][1] = -Length.X();
-
-    // Now, compute inverse of A*L
-    vctDouble3x3 matrix_product = matrix_a*matrix_l;
-    vctDouble3x3 matrix_product_inverse;
-    bool cal_valid;
-
-    nmrGaussJordanInverse3x3(matrix_product, cal_valid, matrix_product_inverse, 0.0);
-
-    if (cal_valid)
-        matrix_cal = matrix_product_inverse;   // if nonsingular, update class member matrix_cal
-
-    else
-        CMN_LOG_CLASS_RUN_WARNING << "SetLength: calibration matrix is singular" << std::endl;
-}
-
-void mtsDATAQSerial::GetScale(vctDouble3 &s) const
-{
-    s = scale;
-}
-
-void mtsDATAQSerial::SetScale(const vctDouble3 &s)
-{
-    scale = s;
 }

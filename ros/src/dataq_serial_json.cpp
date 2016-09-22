@@ -37,14 +37,15 @@ int main(int argc, char * argv[])
     cmnLogger::SetMaskFunction(CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskDefaultLog(CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskClassMatching("mtsDATAQSerial", CMN_LOG_ALLOW_ALL);
-    cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS_AND_WARNINGS);
+    //    cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS_AND_WARNINGS);
+    cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ALL);
 
     // parse options
     cmnCommandLineOptions options;
     std::string jsonConfigFile = "";
     std::string serialPort = "";
     double rosPeriod = 10.0 * cmn_ms;
-    std::string rosNamespace = "/optoforce";
+    std::string rosNamespace = "/dataq_serial";
 
     options.AddOptionOneValue("j", "json-config",
                               "json configuration file",
@@ -53,10 +54,10 @@ int main(int argc, char * argv[])
                               "serial port as a string",
                               cmnCommandLineOptions::REQUIRED_OPTION, &serialPort);
     options.AddOptionOneValue("p", "ros-period",
-                              "period in seconds to read all tool positions (default 0.01, 10 ms, 100Hz).  There is no point to have a period higher than the tracker component",
+                              "period in seconds to read all data (default 0.01, 10 ms, 100Hz).  There is no point to have a period higher than the actual device",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &rosPeriod);
     options.AddOptionOneValue("n", "ros-namespace",
-                              "ROS topic namespace, default is \"/optoforce\" (topic is \"/optoforce/wrench\")",
+                              "ROS topic namespace, default is \"/dataq_serial\"",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &rosNamespace);
     options.AddOptionNoValue("t", "text-only",
                              "text only interface, do not create Qt widgets");
@@ -97,16 +98,20 @@ int main(int argc, char * argv[])
     }
 
     // configure the bridge
+#if 0
     rosBridge->AddPublisherFromCommandRead<prmForceCartesianGet, geometry_msgs::WrenchStamped>
-        ("Force", "GetForceTorque",
+        ("DAQ", "GetForceTorque",
          rosNamespace + "/wrench");
+#endif
 
     // add the bridge after all interfaces have been created
     componentManager->AddComponent(rosBridge);
 
     // connect all interfaces for the ROS bridge
+#if 0
     componentManager->Connect(rosBridge->GetName(), "Force",
                               sensor->GetName(), "Force");
+#endif
 
     // create and start all components
     componentManager->CreateAllAndWait(5.0 * cmn_s);
