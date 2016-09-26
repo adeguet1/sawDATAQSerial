@@ -93,6 +93,7 @@ void mtsDATAQSerial::Startup(void)
         CMN_LOG_CLASS_INIT_ERROR << "Startup: cannot start because component was not correctly configured" << std::endl;
     } else {
         if (!mSerialPort.Open()) {
+
             CMN_LOG_CLASS_INIT_ERROR << "Startup: cannot open serial port: "
                                      << mSerialPort.GetPortName() << std::endl;
         } else {
@@ -171,6 +172,9 @@ void mtsDATAQSerial::Startup(void)
             mConnected = true;
         }
     }
+
+    //mSerialPort.Write("start\r", 6);
+    printf("\n\ %d !! mConnected %d  \n\n\n", true, mConnected);
 }
 
 void mtsDATAQSerial::Run(void)
@@ -178,7 +182,25 @@ void mtsDATAQSerial::Run(void)
     ProcessQueuedCommands();
 
     if (mConnected) {
-#if 0
+         mSerialPort.Write("slist 0 x0000\r", 15);
+         char buffer[256];
+         int nbRead = mSerialPort.Read(buffer, 256);
+         buffer[nbRead - 1] = '\0';
+         printf("0 - %d  ", nbRead);
+
+         mSerialPort.Write("slist 1 x0001\r", 15);
+         nbRead = mSerialPort.Read(buffer, 256);
+         buffer[nbRead - 1] = '\0';
+         printf("1 - %d  ", nbRead);
+
+         //slist 3 with analog channel 2
+         mSerialPort.Write("slist 2 x0002\r", 15);
+         nbRead = mSerialPort.Read(buffer, 256);
+         buffer[nbRead - 1] = '\0';
+         printf("2 - %d  \n", nbRead);
+
+        /*
+        #if 0
         // On Linux, serialPort.Read seems to return a complete packet, even if it is less than the
         // requested size.
         // Thus, we can discard packets that are not the correct size.
@@ -193,7 +215,7 @@ void mtsDATAQSerial::Run(void)
         RawSensor.X() = (double)static_cast<short>(bswap_16(buffer.packet.fx)) * scale.X();
         RawSensor.Y() = (double)static_cast<short>(bswap_16(buffer.packet.fy)) * scale.Y();
         RawSensor.Z() = (double)static_cast<short>(bswap_16(buffer.packet.fz)) * scale.Z();
-#endif
+        #endif*/
     }
 }
 
