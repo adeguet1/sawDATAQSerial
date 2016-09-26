@@ -13,6 +13,7 @@
   --- end cisst license ---
 */
 
+#include <stdio.h>
 #include <cisstConfig.h>
 #include <cisstOSAbstraction/osaSleep.h>
 
@@ -39,6 +40,7 @@ void mtsDATAQSerial::Init(void)
 {
     mConfigured = false;
     mConfigured = false;
+    indexReturn = 0;
 
 #if 0
     StateTable.AddData(Count, "Count");
@@ -50,6 +52,26 @@ void mtsDATAQSerial::Init(void)
         interfaceProvided->AddCommandVoid(&mtsDATAQSerial::Rebias, this, "Rebias");
     }
 #endif
+}
+
+void mtsDATAQSerial::StartScanning(void)
+{
+    if (!mIsScanning) {
+        // set to float mode and start scanning
+        mSerialPort.Write("float\r", 6);
+        mSerialPort.Write("start\r", 6);
+        mSerialPort.Flush();
+        mIsScanning = true;
+    }
+}
+
+void mtsDATAQSerial::StopScanning(void)
+{
+    if (mIsScanning) {
+        mSerialPort.Write("stop\r", 5);
+        mSerialPort.Flush();
+        mIsScanning = false;
+    }
 }
 
 void mtsDATAQSerial::Configure(const std::string & filename)
@@ -92,8 +114,7 @@ void mtsDATAQSerial::Startup(void)
     if (!mConfigured) {
         CMN_LOG_CLASS_INIT_ERROR << "Startup: cannot start because component was not correctly configured" << std::endl;
     } else {
-        if (!mSerialPort.Open()) {
-
+        if (!mSerialPort.Open(true)) {
             CMN_LOG_CLASS_INIT_ERROR << "Startup: cannot open serial port: "
                                      << mSerialPort.GetPortName() << std::endl;
         } else {
@@ -170,59 +191,57 @@ void mtsDATAQSerial::Startup(void)
                                        << mSerialNumber << "]" << std::endl;
 
             mConnected = true;
+
+            // set to asc mode to configure the scan sequence
+            // in current implementation, use all channels
+            mSerialPort.Write("asc\r", 4);
+            mSerialPort.Write("slist 0 x0\r", 11);
+            mSerialPort.Write("slist 1 x1\r", 11);
+            mSerialPort.Write("slist 2 x2\r", 11);
+            mSerialPort.Write("slist 3 x3\r", 11);
+            mSerialPort.Write("slist 4 x8\r", 11);
+            mSerialPort.Write("slist 5 xffff\r", 14);
+
+            // by default assume we should start scanning
+            StartScanning();
         }
     }
-
-    //mSerialPort.Write("start\r", 6);
-    printf("\n\ %d !! mConnected %d  \n\n\n", true, mConnected);
 }
 
 void mtsDATAQSerial::Run(void)
 {
     ProcessQueuedCommands();
 
-    if (mConnected) {
-         mSerialPort.Write("slist 0 x0000\r", 15);
-         char buffer[256];
-         int nbRead = mSerialPort.Read(buffer, 256);
-         buffer[nbRead - 1] = '\0';
-         printf("0 - %d  ", nbRead);
+    if (mConnected && mIsScanning) {
+         char buffer[512];
+         int nbRead = mSerialPort.Read(buffer, 512);
+         //std::cout<< "ONE LINE   >>\n\n\n" << buffer <<"\n\n\n"<<std::endl;
 
-         mSerialPort.Write("slist 1 x0001\r", 15);
-         nbRead = mSerialPort.Read(buffer, 256);
-         buffer[nbRead - 1] = '\0';
-         printf("1 - %d  ", nbRead);
-
-         //slist 3 with analog channel 2
-         mSerialPort.Write("slist 2 x0002\r", 15);
-         nbRead = mSerialPort.Read(buffer, 256);
-         buffer[nbRead - 1] = '\0';
-         printf("2 - %d  \n", nbRead);
-
-        /*
-        #if 0
-        // On Linux, serialPort.Read seems to return a complete packet, even if it is less than the
-        // requested size.
-        // Thus, we can discard packets that are not the correct size.
-        while (!found) {
-            if (serialPort.Read((char *)&buffer, sizeof(buffer)) == sizeof(buffer)) {
-                // Check for expected 4 byte packet header
-                found = ((buffer.bytes[0] == 170) && (buffer.bytes[1] == 7)
-                         && (buffer.bytes[2] == 8) && (buffer.bytes[3] == 10));
-            }
-        }
-        // Now, process the data
-        RawSensor.X() = (double)static_cast<short>(bswap_16(buffer.packet.fx)) * scale.X();
-        RawSensor.Y() = (double)static_cast<short>(bswap_16(buffer.packet.fy)) * scale.Y();
-        RawSensor.Z() = (double)static_cast<short>(bswap_16(buffer.packet.fz)) * scale.Z();
-        #endif*/
+         for (int index = 0; index < nbRead; index++) {
+             if (buffer[index] == 's') {
+                 returnValue[0] = buffer[index];
+                 indexReturn++;
+             } else {
+                 if (indexReturn != 0) {
+                     if (buffer[index] != '\r') {
+                         returnValue[indexReturn] = buffer[index];
+                         indexReturn++;
+                     } else {
+                         returnValue[indexReturn] = '\0';
+                         std::cout << index<<"   >>  " <<returnValue << std::endl;
+                     }
+                 }
+             }
+         }
     }
+    Sleep(500.0 * cmn_ms);
 }
 
 void mtsDATAQSerial::Cleanup(void)
 {
     // Close the port
     if (mConnected) {
+        StopScanning();
         mSerialPort.Close();
         mConnected = false;
     }

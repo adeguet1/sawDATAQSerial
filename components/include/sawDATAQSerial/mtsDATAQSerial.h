@@ -42,13 +42,17 @@ class CISST_EXPORT mtsDATAQSerial: public mtsTaskContinuous {
 
  protected:
     void Init(void); // Initialization (called from constructors)
-
+    void StartScanning(void);
+    void StopScanning(void);
     osaSerialPort mSerialPort;
     std::string mModel;
     std::string mSerialNumber;
     int mFirmware;
     bool mConfigured;
     bool mConnected;
+    bool mIsScanning;
+    int indexReturn;
+    char returnValue[1024];
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsDATAQSerial);
