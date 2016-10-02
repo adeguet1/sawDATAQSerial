@@ -219,16 +219,17 @@ void mtsDATAQSerial::Run(void)
 
          for (int index = 0; index < nbRead; index++) {
              if (buffer[index] == 's') {
-                 returnValue[0] = buffer[index];
+                 indexReturn = 0;
+                 returnValue[indexReturn] = buffer[index];
                  indexReturn++;
              } else {
-                 if (indexReturn != 0) {
+                 if (indexReturn != 0 && buffer[index] != '\0') {
                      if (buffer[index] != '\r') {
                          returnValue[indexReturn] = buffer[index];
                          indexReturn++;
                      } else {
                          returnValue[indexReturn] = '\0';
-                         std::cout << index<<"   >>  " <<returnValue << std::endl;
+                         std::cout  <<"end index "<<" -  " << index<<"   >>  " <<returnValue << std::endl;
                      }
                  }
              }
