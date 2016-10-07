@@ -23,14 +23,16 @@
 CMN_IMPLEMENT_SERVICES_DERIVED(mtsDATAQSerial, mtsTaskContinuous);
 
 mtsDATAQSerial::mtsDATAQSerial(const std::string & name, const unsigned int portNumber):
-    mtsTaskContinuous(name)
+    mtsTaskContinuous(name),
+    mDataStateTable(1000, "Data")
 {
     mSerialPort.SetPortNumber(portNumber);
     Init();
 }
 
 mtsDATAQSerial::mtsDATAQSerial(const std::string & name, const std::string & portName):
-    mtsTaskContinuous(name)
+    mtsTaskContinuous(name),
+    mDataStateTable(1000, "Data")
 {
     mSerialPort.SetPortName(portName);
     Init();
@@ -40,18 +42,23 @@ void mtsDATAQSerial::Init(void)
 {
     mConfigured = false;
     mConfigured = false;
-    indexReturn = 0;
+    mBufferIndex = 0;
 
-#if 0
-    StateTable.AddData(Count, "Count");
+    mAnalogInputs.SetSize(4);
+    mDigitalInputs.SetSize(2);
+
+    AddStateTable(&mDataStateTable);
+    mDataStateTable.SetAutomaticAdvance(false);
+    mDataStateTable.AddData(mAnalogInputs, "AnalogInputs");
+    mDataStateTable.AddData(mDigitalInputs, "DigitalInputs");
 
     mtsInterfaceProvided * interfaceProvided = this->AddInterfaceProvided("DAQ");
     if (interfaceProvided) {
-        interfaceProvided->AddCommandReadState(StateTable, Count, "GetCount");
-        interfaceProvided->AddCommandWrite(&mtsDATAQSerial::SetSensorConfig, this, "SetSensorConfig");
-        interfaceProvided->AddCommandVoid(&mtsDATAQSerial::Rebias, this, "Rebias");
+        interfaceProvided->AddCommandReadState(mDataStateTable, mAnalogInputs,
+                                               "GetAnalogInputs");
+        interfaceProvided->AddCommandReadState(mDataStateTable, mDigitalInputs,
+                                               "GetDigitalInputs");
     }
-#endif
 }
 
 void mtsDATAQSerial::StartScanning(void)
@@ -213,33 +220,47 @@ void mtsDATAQSerial::Run(void)
     ProcessQueuedCommands();
 
     if (mConnected && mIsScanning) {
-         char buffer[512];
+        char buffer[512];
          int nbRead = mSerialPort.Read(buffer, 512);
-         //std::cout<< "ONE LINE   >>\n\n\n" << buffer <<"\n\n\n"<<std::endl;
 
          for (int index = 0; index < nbRead; index++) {
              if (buffer[index] == 's') {
-                 indexReturn = 0;
-                 returnValue[indexReturn] = buffer[index];
-                 indexReturn++;
-             } else {
-                 if (indexReturn != 0 && buffer[index] != '\0') {
+                 mBufferIndex = 0;
+                 mBuffer[mBufferIndex] = buffer[index];
+                 mBufferIndex++;
+             } else {//check mBufferIndex size
+                 if (mBufferIndex != 0 && buffer[index] != '\0') {
                      if (buffer[index] != '\r') {
-                         returnValue[indexReturn] = buffer[index];
-                         indexReturn++;
+                         mBuffer[mBufferIndex] = buffer[index];
+                         mBufferIndex++;
                      } else {
-                         returnValue[indexReturn] = '\0';
-                         std::cout  <<"end index "<<" -  " << index<<"   >>  " <<returnValue << std::endl;
+                         mBuffer[mBufferIndex] = '\0';
+                         mDataStateTable.Start();
+                         std::cout  <<"end index "<<" -  " << index<<"   >>  " <<mBuffer << std::endl;
+
+                         std::stringstream stream;
+                         stream << mBuffer;
+                         std::string header;
+                         stream >> header
+                                >> mAnalogInputs[0]
+                                >> mAnalogInputs[1]
+                                >> mAnalogInputs[2]
+                                >> mAnalogInputs[3];
+
+                         std::cout <<  "a  : " << stream.str()  <<std::endl;
+
+                         // ... add code to parse the buffer and 
+                         mDataStateTable.Advance();
                      }
                  }
              }
          }
     }
-    Sleep(500.0 * cmn_ms);
 }
 
 void mtsDATAQSerial::Cleanup(void)
 {
+    std::cerr << "-------------------------------------------------- " << std::endl;
     // Close the port
     if (mConnected) {
         StopScanning();
