@@ -228,30 +228,39 @@ void mtsDATAQSerial::Run(void)
                  mBufferIndex = 0;
                  mBuffer[mBufferIndex] = buffer[index];
                  mBufferIndex++;
-             } else {//check mBufferIndex size
-                 if (mBufferIndex != 0 && buffer[index] != '\0') {
-                     if (buffer[index] != '\r') {
-                         mBuffer[mBufferIndex] = buffer[index];
-                         mBufferIndex++;
-                     } else {
-                         mBuffer[mBufferIndex] = '\0';
-                         mDataStateTable.Start();
-                         std::cout  <<"end index "<<" -  " << index<<"   >>  " <<mBuffer << std::endl;
+             } else {
+                 if (mBufferIndex < sizeof(mBuffer) && index < sizeof(buffer)) {
+                     if (mBufferIndex != 0 && buffer[index] != '\0') {
+                         if (buffer[index] != '\r') {
+                             mBuffer[mBufferIndex] = buffer[index];
+                             mBufferIndex++;
+                         } else {
+                             int digitalValue = mBuffer[mBufferIndex - 1];
+                             mBuffer[mBufferIndex] = '\0';
+                             mDataStateTable.Start();
 
-                         std::stringstream stream;
-                         stream << mBuffer;
-                         std::string header;
-                         stream >> header
-                                >> mAnalogInputs[0]
-                                >> mAnalogInputs[1]
-                                >> mAnalogInputs[2]
-                                >> mAnalogInputs[3];
+                             std::cout << mBuffer << std::endl;
+                         
+                             std::stringstream stream;
+                             stream << mBuffer;
 
-                         std::cout <<  "a  : " << stream.str()  <<std::endl;
+                             std::string header;
+                             stream >> header
+                                    >> mAnalogInputs[0]
+                                    >> mAnalogInputs[1]
+                                    >> mAnalogInputs[2]
+                                    >> mAnalogInputs[3];
 
-                         // ... add code to parse the buffer and 
-                         mDataStateTable.Advance();
+                             mDigitalInputs[0] = digitalValue / 2;
+                             mDigitalInputs[1] = digitalValue % 2;
+
+                             std::cout <<  "Outputs  : " << mAnalogInputs[0] <<"   "<< mAnalogInputs[1] <<"   "<< mAnalogInputs[2] <<"   "<< mAnalogInputs[3] 
+                                       <<"   "<<  mDigitalInputs[0] <<"   "<< mDigitalInputs[1] <<std::endl;
+                             mDataStateTable.Advance();
+                         }
                      }
+                 } else {
+                     std::cout <<"Error - Size of Buffers" << std::endl;
                  }
              }
          }
