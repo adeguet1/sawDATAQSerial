@@ -239,7 +239,7 @@ void mtsDATAQSerial::Run(void)
                              mBuffer[mBufferIndex] = '\0';
                              mDataStateTable.Start();
 
-                             std::cout << mBuffer << std::endl;
+                             //std::cout << mBuffer << std::endl;
                          
                              std::stringstream stream;
                              stream << mBuffer;
