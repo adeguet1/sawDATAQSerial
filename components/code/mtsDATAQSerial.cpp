@@ -34,7 +34,7 @@ mtsDATAQSerial::mtsDATAQSerial(const std::string & name, const std::string & por
     mtsTaskContinuous(name),
     mDataStateTable(1000, "Data")
 {
-    mSerialPort.SetPortName(portName);
+    mSerialPort.SetPortName(portName);  
     Init();
 }
 
