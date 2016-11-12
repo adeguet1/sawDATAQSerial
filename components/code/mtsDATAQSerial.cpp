@@ -256,6 +256,7 @@ void mtsDATAQSerial::Run(void)
 
                              std::cout <<  "Outputs  : " << mAnalogInputs[0] <<"   "<< mAnalogInputs[1] <<"   "<< mAnalogInputs[2] <<"   "<< mAnalogInputs[3] 
                                        <<"   "<<  mDigitalInputs[0] <<"   "<< mDigitalInputs[1] <<std::endl;
+                             // std::cout <<"!!!" << mDataStateTable.GetAnalogInputs()<<endl;
                              mDataStateTable.Advance();
                          }
                      }
