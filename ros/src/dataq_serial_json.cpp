@@ -2,9 +2,6 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Anton Deguet
-  Created on: 2016-09-21
-
   (C) Copyright 2016 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
@@ -22,6 +19,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnCommandLineOptions.h>
 #include <cisstMultiTask/mtsTaskManager.h>
 #include <sawDATAQSerial/mtsDATAQSerial.h>
+#include <sawDATAQSerial/mtsDATAQSerialQtWidget.h>
 
 #include <ros/ros.h>
 #include <cisst_ros_bridge/mtsROSBridge.h>
@@ -37,8 +35,7 @@ int main(int argc, char * argv[])
     cmnLogger::SetMaskFunction(CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskDefaultLog(CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskClassMatching("mtsDATAQSerial", CMN_LOG_ALLOW_ALL);
-    //    cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS_AND_WARNINGS);
-    cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ALL);
+    cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS_AND_WARNINGS);
 
     // parse options
     cmnCommandLineOptions options;
@@ -92,9 +89,16 @@ int main(int argc, char * argv[])
     // create a Qt user interface if needed
     QApplication * application;
     QTabWidget * tabWidget;
+    mtsDATAQSerialQtWidget * sensorWidget;
     if (hasQt) {
         application = new QApplication(argc, argv);
         tabWidget = new QTabWidget;
+        sensorWidget = new mtsDATAQSerialQtWidget("DATAQ-GUI");
+        sensorWidget->Configure();
+        tabWidget->addTab(sensorWidget, "DAQ");
+        componentManager->AddComponent(sensorWidget);
+        componentManager->Connect(sensorWidget->GetName(), "DAQ",
+                                  sensor->GetName(), "DAQ");
     }
 
     // configure the bridge

@@ -65,6 +65,10 @@ if (cisst_FOUND_AS_REQUIRED)
   set_property (TARGET sawDATAQSerial PROPERTY FOLDER "sawDATAQSerial")
   cisst_target_link_libraries (sawDATAQSerial ${REQUIRED_CISST_LIBRARIES})
 
+  # add Qt code
+  add_subdirectory (code/Qt)
+  set (sawDATAQSerial_LIBRARIES ${sawDATAQSerial_LIBRARIES} ${sawDATAQSerialQt_LIBRARIES})
+
   set (sawDATAQSerial_CMAKE_CONFIG_FILE
        "${sawDATAQSerial_CONFIG_FILE_DIR}/sawDATAQSerialConfig.cmake")
 

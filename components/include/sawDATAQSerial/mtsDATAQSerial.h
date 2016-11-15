@@ -13,15 +13,11 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-
 #ifndef _mtsDATAQSerial_h
 #define _mtsDATAQSerial_h
 
-#include <cisstMultiTask/mtsForwardDeclarations.h>
-#include <cisstMultiTask/mtsTaskContinuous.h>
 #include <cisstOSAbstraction/osaSerialPort.h>
-#include <cisstVector/vctFixedSizeVectorTypes.h>
-#include <cisstParameterTypes/prmForceCartesianGet.h>
+#include <cisstMultiTask/mtsTaskContinuous.h>
 #include <sawDATAQSerial/sawDATAQSerialRevision.h>
 
 // Always include last

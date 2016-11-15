@@ -28,7 +28,8 @@ if (cisst_FOUND_AS_REQUIRED)
   endif (CISST_HAS_QT4)
 
   add_library (sawDATAQSerialQt
-               ${sawDATAQSerial_HEADER_DIR}//mtsDATAQSerialQtWidget.h
+               ${sawDATAQSerial_HEADER_DIR}/mtsDATAQSerialQtWidget.h
+               ${sawDATAQSerial_HEADER_DIR}/sawDATAQSerialQtExport.h
                mtsDATAQSerialQtWidget.cpp
                ${SAW_DATAQSERIAL_QT_WRAP_CPP})
   set_property (TARGET sawDATAQSerialQt PROPERTY FOLDER "sawDATAQSerial")

@@ -1,67 +1,65 @@
-#ifndef _mtsPIDQtWidget_h
-#define _mtsPIDQtWidget_h
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-    */
+/* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
-#include <cisstCommon/cmnXMLPath.h>
-#include <cisstCommon/cmnUnits.h>
-#include <cisstVector/vctPlot2DOpenGLQtWidget.h>
-#include <cisstMultiTask/mtsComponent.h>
+/*
+  (C) Copyright 2016 Johns Hopkins University (JHU), All Rights Reserved.
+
+--- begin cisst license - do not edit ---
+
+This software is provided "as is" under an open source license, with
+no warranty.  The complete license can be found in license.txt and
+http://www.cisst.org/cisst/license.txt.
+
+--- end cisst license ---
+*/
+
+#ifndef _mtsDATAQSerialQtWidget_h
+#define _mtsDATAQSerialQtWidget_h
+
 #include <cisstVector/vctQtWidgetDynamicVector.h>
-#include <cisstParameterTypes/prmStateJoint.h>
-#include <cisstParameterTypes/prmPositionJointSet.h>
 
-#include <QCheckBox>
-#include <QSpinBox>
-#include <QPushButton>
-#include <sawControllers/sawControllersQtExport.h>
+#include <cisstMultiTask/mtsComponent.h>
+#include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
 
-class CISST_EXPORT mtsPIDQtWidget: public QWidget, public mtsComponent
+// Always include last
+#include <sawDATAQSerial/sawDATAQSerialQtExport.h>
+
+class CISST_EXPORT mtsDATAQSerialQtWidget: public QWidget, public mtsComponent
 {
     Q_OBJECT;
-    CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
+    CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
 public:
-    mtsPIDQtWidget(const std::string & componentName, unsigned int numberOfAxis,
-                   double periodInSeconds = 50.0 * cmn_ms);
-    mtsPIDQtWidget(const mtsComponentConstructorNameAndUInt &arg);
-    ~mtsPIDQtWidget(){}
+
+    mtsDATAQSerialQtWidget(const std::string & componentName,
+			   double periodInSeconds = 50.0 * cmn_ms);
+    ~mtsDATAQSerialQtWidget(){}
 
     void Configure(const std::string & filename = "");
+    void Startup(void);
     void Cleanup(void);
 
 protected:
-    void Init(void);
+    virtual void timerEvent(QTimerEvent * event);
     virtual void closeEvent(QCloseEvent * event);
 
-signals:
-    void SignalEnablePID(bool enable);
-
-private slots:
-    //! slot to select which axis to plot
-    void SlotPlotIndex(int newAxis);
-    //! timer event to update GUI
-    void timerEvent(QTimerEvent * event);
-
-private:
-    //! setup PID controller GUI
+    //! setup TeleOperationPSM controller GUI
     void setupUi(void);
     int TimerPeriodInMilliseconds;
 
-    void JointLimitEventHandler(const vctBoolVec & flags);
-    void ErrorEventHandler(const std::string & message);
-    void EnableEventHandler(const bool & enable);
+    struct {
+      mtsFunctionRead  GetAnalogInputs;
+      vctDoubleVec AnalogInputs;
+      mtsFunctionRead  GetDigitalInputs;
+      vctBoolVec DigitalInputs;
+    } DAQ;
 
-protected:
+    vctQtWidgetDynamicVectorDoubleRead * QVRAnalogInputsWidget;
+    vctQtWidgetDynamicVectorBoolRead * QVRDigitalInputsWidget;
 
-    struct ControllerPIDStruct {
-        mtsFunctionRead  GetAnalogValues;
-        mtsFunctionRead  GetDigitalValues;
-    } PID;
-
-private:
-
-    // GUI: Commands
-    vctQtWidgetDynamicVectorDoubleRead * QVRAnalogValueWidget;
-    vctQtWidgetDynamicVectorDoubleRead * QVRDigitalValueWidget;
+    // timing
+    mtsIntervalStatistics IntervalStatistics;
+    mtsQtWidgetIntervalStatistics * QMIntervalStatistics;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsDATAQSerialQtWidget);
