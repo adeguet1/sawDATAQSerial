@@ -13,10 +13,6 @@
   --- end cisst license ---
 */
 
-#include <stdio.h>
-#include <cisstConfig.h>
-#include <cisstOSAbstraction/osaSleep.h>
-
 #include <sawDATAQSerial/mtsDATAQSerial.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 
@@ -34,7 +30,7 @@ mtsDATAQSerial::mtsDATAQSerial(const std::string & name, const std::string & por
     mtsTaskContinuous(name),
     mDataStateTable(1000, "Data")
 {
-    mSerialPort.SetPortName(portName);  
+    mSerialPort.SetPortName(portName);
     Init();
 }
 
@@ -180,7 +176,7 @@ void mtsDATAQSerial::Startup(void)
             stream >> mFirmware;
             CMN_LOG_CLASS_INIT_VERBOSE << "Startup: found firmware revision ["
                                        << mFirmware << "]" << std::endl;
-            
+
             // check serial number
             mSerialPort.Write("info 6\r", 7);
             nbRead = mSerialPort.Read(buffer, 256);
@@ -240,7 +236,7 @@ void mtsDATAQSerial::Run(void)
                              mDataStateTable.Start();
 
                              //std::cout << mBuffer << std::endl;
-                         
+
                              std::stringstream stream;
                              stream << mBuffer;
 
@@ -254,7 +250,7 @@ void mtsDATAQSerial::Run(void)
                              mDigitalInputs[0] = digitalValue / 2;
                              mDigitalInputs[1] = digitalValue % 2;
 
-                             std::cout <<  "Outputs  : " << mAnalogInputs[0] <<"   "<< mAnalogInputs[1] <<"   "<< mAnalogInputs[2] <<"   "<< mAnalogInputs[3] 
+                             std::cout <<  "Outputs  : " << mAnalogInputs[0] <<"   "<< mAnalogInputs[1] <<"   "<< mAnalogInputs[2] <<"   "<< mAnalogInputs[3]
                                        <<"   "<<  mDigitalInputs[0] <<"   "<< mDigitalInputs[1] <<std::endl;
                              // std::cout <<"!!!" << mDataStateTable.GetAnalogInputs()<<endl;
                              mDataStateTable.Advance();

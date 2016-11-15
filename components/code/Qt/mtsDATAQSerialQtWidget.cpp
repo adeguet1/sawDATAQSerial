@@ -35,8 +35,8 @@ mtsDATAQSerialQtWidget::mtsDATAQSerialQtWidget(const std::string & componentName
 {
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("DAQ");
     if (interfaceRequired) {
-        interfaceRequired->AddFunction("GetDigitalInputs", DAQ.GetAnalogInputs);
-        interfaceRequired->AddFunction("GetAnalogInputs", DAQ.GetDigitalInputs);   
+        interfaceRequired->AddFunction("GetDigitalInputs", DAQ.GetDigitalInputs);
+        interfaceRequired->AddFunction("GetAnalogInputs", DAQ.GetAnalogInputs);
     }
 }
 
@@ -63,7 +63,7 @@ void mtsDATAQSerialQtWidget::Cleanup(void)
 
 void mtsDATAQSerialQtWidget::closeEvent(QCloseEvent * event)
 {
-    int answer = QMessageBox::warning(this, tr("mtsTeleOperationPSMQtWidget"),
+    int answer = QMessageBox::warning(this, tr("mtsDATAQSerialQtWidget"),
                                       tr("Do you really want to quit this application?"),
                                       QMessageBox::No | QMessageBox::Yes);
     if (answer == QMessageBox::Yes) {
