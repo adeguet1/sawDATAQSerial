@@ -102,20 +102,17 @@ int main(int argc, char * argv[])
     }
 
     // configure the bridge
-#if 0
-    rosBridge->AddPublisherFromCommandRead<prmForceCartesianGet, geometry_msgs::WrenchStamped>
-        ("DAQ", "GetForceTorque",
-         rosNamespace + "/wrench");
-#endif
+    rosBridge->AddPublisherFromCommandRead<prmInputData, sensor_msgs::Joy>
+        ("DAQ", "GetInputs",
+         rosNamespace + "/data");
+
 
     // add the bridge after all interfaces have been created
     componentManager->AddComponent(rosBridge);
 
     // connect all interfaces for the ROS bridge
-#if 0
-    componentManager->Connect(rosBridge->GetName(), "Force",
-                              sensor->GetName(), "Force");
-#endif
+    componentManager->Connect(rosBridge->GetName(), "DAQ",
+                              sensor->GetName(), "DAQ");
 
     // create and start all components
     componentManager->CreateAllAndWait(5.0 * cmn_s);

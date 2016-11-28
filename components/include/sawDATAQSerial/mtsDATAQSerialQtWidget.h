@@ -17,9 +17,14 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsDATAQSerialQtWidget_h
 
 #include <cisstVector/vctQtWidgetDynamicVector.h>
-
+#include <cisstVector/vctPlot2DOpenGLQtWidget.h>
 #include <cisstMultiTask/mtsComponent.h>
 #include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
+#include <cisstParameterTypes/prmInputData.h>
+
+#include <QCheckBox>
+#include <QSpinBox>
+#include <QPushButton>
 
 // Always include last
 #include <sawDATAQSerial/sawDATAQSerialQtExport.h>
@@ -48,10 +53,8 @@ protected:
     int TimerPeriodInMilliseconds;
 
     struct {
-      mtsFunctionRead  GetAnalogInputs;
-      vctDoubleVec AnalogInputs;
-      mtsFunctionRead  GetDigitalInputs;
-      vctBoolVec DigitalInputs;
+      mtsFunctionRead GetInputs;
+      prmInputData Inputs;
     } DAQ;
 
     vctQtWidgetDynamicVectorDoubleRead * QVRAnalogInputsWidget;
@@ -60,6 +63,11 @@ protected:
     // timing
     mtsIntervalStatistics IntervalStatistics;
     mtsQtWidgetIntervalStatistics * QMIntervalStatistics;
+
+private:
+    vctPlot2DOpenGLQtWidget * QVPlot;
+    vctPlot2DBase::Signal * AnalogSignal;
+    QSpinBox * QSBPlotIndex;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsDATAQSerialQtWidget);

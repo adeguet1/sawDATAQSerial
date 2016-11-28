@@ -37,23 +37,19 @@ mtsDATAQSerial::mtsDATAQSerial(const std::string & name, const std::string & por
 void mtsDATAQSerial::Init(void)
 {
     mConfigured = false;
-    mConfigured = false;
     mBufferIndex = 0;
 
-    mAnalogInputs.SetSize(4);
-    mDigitalInputs.SetSize(2);
+    mInputs.AnalogInputs().SetSize(4);
+    mInputs.DigitalInputs().SetSize(2);
 
     AddStateTable(&mDataStateTable);
     mDataStateTable.SetAutomaticAdvance(false);
-    mDataStateTable.AddData(mAnalogInputs, "AnalogInputs");
-    mDataStateTable.AddData(mDigitalInputs, "DigitalInputs");
-
+    mDataStateTable.AddData(mInputs, "Inputs");
+ 
     mtsInterfaceProvided * interfaceProvided = this->AddInterfaceProvided("DAQ");
     if (interfaceProvided) {
-        interfaceProvided->AddCommandReadState(mDataStateTable, mAnalogInputs,
-                                               "GetAnalogInputs");
-        interfaceProvided->AddCommandReadState(mDataStateTable, mDigitalInputs,
-                                               "GetDigitalInputs");
+        interfaceProvided->AddCommandReadState(mDataStateTable, mInputs,
+                                               "GetInputs");
     }
 }
 
@@ -242,17 +238,15 @@ void mtsDATAQSerial::Run(void)
 
                              std::string header;
                              stream >> header
-                                    >> mAnalogInputs[0]
-                                    >> mAnalogInputs[1]
-                                    >> mAnalogInputs[2]
-                                    >> mAnalogInputs[3];
+                                    >> mInputs.AnalogInputs()[0]
+                                    >> mInputs.AnalogInputs()[1]
+                                    >> mInputs.AnalogInputs()[2]
+                                    >> mInputs.AnalogInputs()[3];
 
-                             mDigitalInputs[0] = digitalValue / 2;
-                             mDigitalInputs[1] = digitalValue % 2;
+                             mInputs.DigitalInputs()[0] = digitalValue / 2;
+                             mInputs.DigitalInputs()[1] = digitalValue % 2;
 
-                             std::cout <<  "Outputs  : " << mAnalogInputs[0] <<"   "<< mAnalogInputs[1] <<"   "<< mAnalogInputs[2] <<"   "<< mAnalogInputs[3]
-                                       <<"   "<<  mDigitalInputs[0] <<"   "<< mDigitalInputs[1] <<std::endl;
-                             // std::cout <<"!!!" << mDataStateTable.GetAnalogInputs()<<endl;
+                             // std::cout <<  "Data  : " << mInputs << std::endl;
                              mDataStateTable.Advance();
                          }
                      }
@@ -266,7 +260,6 @@ void mtsDATAQSerial::Run(void)
 
 void mtsDATAQSerial::Cleanup(void)
 {
-    std::cerr << "-------------------------------------------------- " << std::endl;
     // Close the port
     if (mConnected) {
         StopScanning();

@@ -18,6 +18,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstOSAbstraction/osaSerialPort.h>
 #include <cisstMultiTask/mtsTaskContinuous.h>
+#include <cisstParameterTypes/prmInputData.h>
 #include <sawDATAQSerial/sawDATAQSerialRevision.h>
 
 // Always include last
@@ -56,8 +57,7 @@ class CISST_EXPORT mtsDATAQSerial: public mtsTaskContinuous {
 
     // data
     mtsStateTable mDataStateTable;
-    vctDoubleVec mAnalogInputs;
-    vctBoolVec mDigitalInputs;
+    prmInputData mInputs;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsDATAQSerial);

@@ -20,14 +20,23 @@ http://www.cisst.org/cisst/license.txt.
 #include <QMessageBox>
 #include <QCloseEvent>
 #include <QCoreApplication>
-
+#include <QMessageBox>
+#include <QGridLayout>
+#include <QLabel>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
+#include <QGroupBox>
+#include <QCloseEvent>
+#include <QCoreApplication>
 // cisst
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmJointType.h>
 
+//timing
+
 #include <sawDATAQSerial/mtsDATAQSerialQtWidget.h>
 
-CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsDATAQSerialQtWidget, mtsComponent, mtsComponentConstructorNameAndUInt);
+CMN_IMPLEMENT_SERVICES(mtsDATAQSerialQtWidget);
 
 mtsDATAQSerialQtWidget::mtsDATAQSerialQtWidget(const std::string & componentName, double periodInSeconds):
     mtsComponent(componentName),
@@ -35,8 +44,7 @@ mtsDATAQSerialQtWidget::mtsDATAQSerialQtWidget(const std::string & componentName
 {
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("DAQ");
     if (interfaceRequired) {
-        interfaceRequired->AddFunction("GetDigitalInputs", DAQ.GetDigitalInputs);
-        interfaceRequired->AddFunction("GetAnalogInputs", DAQ.GetAnalogInputs);
+        interfaceRequired->AddFunction("GetInputs", DAQ.GetInputs);
     }
 }
 
@@ -82,15 +90,19 @@ void mtsDATAQSerialQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     }
 
     // retrieve transformations
-    DAQ.GetAnalogInputs(DAQ.AnalogInputs);
-    DAQ.GetDigitalInputs(DAQ.DigitalInputs);
+    DAQ.GetInputs(DAQ.Inputs);
 
     // update display
-    QVRAnalogInputsWidget->SetValue(DAQ.AnalogInputs);
-    QVRDigitalInputsWidget->SetValue(DAQ.DigitalInputs);
+    QVRAnalogInputsWidget->SetValue(DAQ.Inputs.AnalogInputs());
+    QVRDigitalInputsWidget->SetValue(DAQ.Inputs.DigitalInputs());
 
     // TeleOperation.GetPeriodStatistics(IntervalStatistics);
     // QMIntervalStatistics->SetValue(IntervalStatistics);
+
+    //plot ... look into Time.Now
+    int plotIndex = 0;
+    AnalogSignal->AppendPoint(vctDouble2(DAQ.Inputs.Timestamp(), DAQ.Inputs.AnalogInputs()[plotIndex]));
+    QVPlot->update();
 }
 
 void mtsDATAQSerialQtWidget::setupUi(void)
@@ -98,7 +110,7 @@ void mtsDATAQSerialQtWidget::setupUi(void)
     // 3D frames ...
 
     // state info
-    QHBoxLayout * topLayout = new QHBoxLayout;
+    QVBoxLayout * topLayout = new QVBoxLayout;
     this->setLayout(topLayout);
 
     QVRAnalogInputsWidget = new vctQtWidgetDynamicVectorDoubleRead();
@@ -107,7 +119,19 @@ void mtsDATAQSerialQtWidget::setupUi(void)
     QVRDigitalInputsWidget = new vctQtWidgetDynamicVectorBoolRead();
     topLayout->addWidget(QVRDigitalInputsWidget);
 
-    // Timing
-    QMIntervalStatistics = new mtsQtWidgetIntervalStatistics();
-    topLayout->addWidget(QMIntervalStatistics);
+    // - pick axis to display
+    // legend
+    QLabel * label;
+    QPalette palette;
+    palette.setColor(QPalette::Window, Qt::black);
+    label = new QLabel("AnalogSignal");
+    label->setAutoFillBackground(true);
+
+    QVPlot = new vctPlot2DOpenGLQtWidget();
+    vctPlot2DBase::Scale * scaleSignal = QVPlot->AddScale("timing");
+    AnalogSignal = scaleSignal->AddSignal("signal");
+    AnalogSignal->SetColor(vctDouble3(1.0, 0.0, 0.0));
+    QVPlot->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding));
+    topLayout->addWidget(QVPlot);
+
 }
