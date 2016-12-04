@@ -52,6 +52,7 @@ class CISST_EXPORT mtsDATAQSerial: public mtsTaskContinuous {
     bool mConfigured;
     bool mConnected;
     bool mIsScanning;
+    bool mReadBinary; //true then read as binary false read as floats
     int mBufferIndex;
     char mBuffer[512];
 

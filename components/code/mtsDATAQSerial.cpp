@@ -38,6 +38,7 @@ void mtsDATAQSerial::Init(void)
 {
     mConfigured = false;
     mBufferIndex = 0;
+    mReadBinary = true;
 
     mInputs.AnalogInputs().SetSize(4);
     mInputs.DigitalInputs().SetSize(2);
@@ -57,7 +58,11 @@ void mtsDATAQSerial::StartScanning(void)
 {
     if (!mIsScanning) {
         // set to float mode and start scanning
-        mSerialPort.Write("float\r", 6);
+        if(mReadBinary) {
+            mSerialPort.Write("binary\r", 7);
+        } else {
+            mSerialPort.Write("float\r", 6);
+        }
         mSerialPort.Write("start\r", 6);
         mSerialPort.Flush();
         mIsScanning = true;
@@ -246,7 +251,7 @@ void mtsDATAQSerial::Run(void)
                              mInputs.DigitalInputs()[0] = digitalValue / 2;
                              mInputs.DigitalInputs()[1] = digitalValue % 2;
 
-                             // std::cout <<  "Data  : " << mInputs << std::endl;
+                             std::cout <<  "Data  : " << mInputs << std::endl;
                              mDataStateTable.Advance();
                          }
                      }
