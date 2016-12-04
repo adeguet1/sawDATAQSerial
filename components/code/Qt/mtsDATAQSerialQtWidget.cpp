@@ -107,31 +107,38 @@ void mtsDATAQSerialQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
 
 void mtsDATAQSerialQtWidget::setupUi(void)
 {
-    // 3D frames ...
+    QGridLayout * mainLayout = new QGridLayout;
+    this->setLayout(mainLayout);
 
-    // state info
-    QVBoxLayout * topLayout = new QVBoxLayout;
-    this->setLayout(topLayout);
-
+    //signal info
+    QHBoxLayout * analogLayout = new QHBoxLayout;
+    QLabel * analogLabel = new QLabel("Analog Signals");
+    analogLayout->addWidget(analogLabel);
     QVRAnalogInputsWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    topLayout->addWidget(QVRAnalogInputsWidget);
+    analogLayout->addWidget(QVRAnalogInputsWidget);
+    mainLayout->addLayout(analogLayout,0, 0);
 
+    QHBoxLayout * digitalLayout = new QHBoxLayout;
+    QLabel * digitalLabel = new QLabel("Digtal Signals");
+    digitalLayout->addWidget(digitalLabel);
     QVRDigitalInputsWidget = new vctQtWidgetDynamicVectorBoolRead();
-    topLayout->addWidget(QVRDigitalInputsWidget);
+    digitalLayout->addWidget(QVRDigitalInputsWidget);
 
-    // - pick axis to display
-    // legend
+    mainLayout->addLayout(digitalLayout,1, 0);
+
+
+    //plot info
+    QHBoxLayout * plotLayout = new QHBoxLayout;
     QLabel * label;
     QPalette palette;
     palette.setColor(QPalette::Window, Qt::black);
-    label = new QLabel("AnalogSignal");
-    label->setAutoFillBackground(true);
 
     QVPlot = new vctPlot2DOpenGLQtWidget();
-    vctPlot2DBase::Scale * scaleSignal = QVPlot->AddScale("timing");
-    AnalogSignal = scaleSignal->AddSignal("signal");
+    vctPlot2DBase::Scale * scaleSignal = QVPlot->AddScale("signal");
+    AnalogSignal = scaleSignal->AddSignal("analog");
     AnalogSignal->SetColor(vctDouble3(1.0, 0.0, 0.0));
     QVPlot->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding));
-    topLayout->addWidget(QVPlot);
+    plotLayout->addWidget(QVPlot);
 
+    mainLayout->addLayout(plotLayout,2, 0);
 }

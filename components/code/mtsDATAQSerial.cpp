@@ -38,7 +38,7 @@ void mtsDATAQSerial::Init(void)
 {
     mConfigured = false;
     mBufferIndex = 0;
-    mReadBinary = true;
+    mReadBinary = false;
 
     mInputs.AnalogInputs().SetSize(4);
     mInputs.DigitalInputs().SetSize(2);
@@ -183,6 +183,7 @@ void mtsDATAQSerial::Startup(void)
             nbRead = mSerialPort.Read(buffer, 256);
             // replace the carriage return by end of line
             buffer[nbRead - 1] = '\0';
+
             read = buffer;
             if (read.compare(0, 6, "info 6") != 0) {
                 CMN_LOG_CLASS_INIT_ERROR << "Startup: failed to get answer for command `info 6`"
