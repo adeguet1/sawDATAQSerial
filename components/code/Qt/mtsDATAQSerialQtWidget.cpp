@@ -45,6 +45,7 @@ mtsDATAQSerialQtWidget::mtsDATAQSerialQtWidget(const std::string & componentName
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("DAQ");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetInputs", DAQ.GetInputs);
+        interfaceRequired->AddFunction("GetPeriodStatistics", GetPeriodStatistics);
     }
 }
 
@@ -96,8 +97,8 @@ void mtsDATAQSerialQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     QVRAnalogInputsWidget->SetValue(DAQ.Inputs.AnalogInputs());
     QVRDigitalInputsWidget->SetValue(DAQ.Inputs.DigitalInputs());
 
-    // TeleOperation.GetPeriodStatistics(IntervalStatistics);
-    // QMIntervalStatistics->SetValue(IntervalStatistics);
+    GetPeriodStatistics(IntervalStatistics);
+    QMIntervalStatistics->SetValue(IntervalStatistics);
 
     //plot ... look into Time.Now
     int plotIndex = 0;
@@ -107,38 +108,48 @@ void mtsDATAQSerialQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
 
 void mtsDATAQSerialQtWidget::setupUi(void)
 {
-    QGridLayout * mainLayout = new QGridLayout;
-    this->setLayout(mainLayout);
+    // ---- data tab 
+    QWidget * dataWidget = new QWidget();
+    this->addTab(dataWidget, "Data");
+    
+    QVBoxLayout * dataLayout = new QVBoxLayout;
+    dataWidget->setLayout(dataLayout);
 
-    //signal info
+    // text display
     QHBoxLayout * analogLayout = new QHBoxLayout;
     QLabel * analogLabel = new QLabel("Analog Signals");
     analogLayout->addWidget(analogLabel);
     QVRAnalogInputsWidget = new vctQtWidgetDynamicVectorDoubleRead();
     analogLayout->addWidget(QVRAnalogInputsWidget);
-    mainLayout->addLayout(analogLayout,0, 0);
+    dataLayout->addLayout(analogLayout);
 
     QHBoxLayout * digitalLayout = new QHBoxLayout;
     QLabel * digitalLabel = new QLabel("Digtal Signals");
     digitalLayout->addWidget(digitalLabel);
     QVRDigitalInputsWidget = new vctQtWidgetDynamicVectorBoolRead();
     digitalLayout->addWidget(QVRDigitalInputsWidget);
+    dataLayout->addLayout(digitalLayout);
 
-    mainLayout->addLayout(digitalLayout,1, 0);
-
-
-    //plot info
-    QHBoxLayout * plotLayout = new QHBoxLayout;
-    QLabel * label;
-    QPalette palette;
-    palette.setColor(QPalette::Window, Qt::black);
-
+    // plot
     QVPlot = new vctPlot2DOpenGLQtWidget();
     vctPlot2DBase::Scale * scaleSignal = QVPlot->AddScale("signal");
     AnalogSignal = scaleSignal->AddSignal("analog");
     AnalogSignal->SetColor(vctDouble3(1.0, 0.0, 0.0));
     QVPlot->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding));
-    plotLayout->addWidget(QVPlot);
+    dataLayout->addWidget(QVPlot);
 
-    mainLayout->addLayout(plotLayout,2, 0);
+    // ---- configuration tab 
+    QWidget * configurationWidget = new QWidget();
+    this->addTab(configurationWidget, "Configuration");
+    
+    QVBoxLayout * configurationLayout = new QVBoxLayout;
+    configurationWidget->setLayout(configurationLayout);
+
+    // ..... more to add here
+
+    
+
+    // ---- timing tab
+    QMIntervalStatistics = new mtsQtWidgetIntervalStatistics();
+    this->addTab(QMIntervalStatistics, "Timing");
 }

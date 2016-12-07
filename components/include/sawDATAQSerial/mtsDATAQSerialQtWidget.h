@@ -22,14 +22,13 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
 #include <cisstParameterTypes/prmInputData.h>
 
-#include <QCheckBox>
+#include <QTabWidget>
 #include <QSpinBox>
-#include <QPushButton>
 
 // Always include last
 #include <sawDATAQSerial/sawDATAQSerialQtExport.h>
 
-class CISST_EXPORT mtsDATAQSerialQtWidget: public QWidget, public mtsComponent
+class CISST_EXPORT mtsDATAQSerialQtWidget: public QTabWidget, public mtsComponent
 {
     Q_OBJECT;
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
@@ -63,11 +62,12 @@ protected:
     // timing
     mtsIntervalStatistics IntervalStatistics;
     mtsQtWidgetIntervalStatistics * QMIntervalStatistics;
+    mtsFunctionRead GetPeriodStatistics;
 
-private:
     vctPlot2DOpenGLQtWidget * QVPlot;
     vctPlot2DBase::Signal * AnalogSignal;
     QSpinBox * QSBPlotIndex;
+    int PlotIndex;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsDATAQSerialQtWidget);

@@ -18,6 +18,14 @@
 
 CMN_IMPLEMENT_SERVICES_DERIVED(mtsDATAQSerial, mtsTaskContinuous);
 
+
+/*
+  \todo After every Write in configuration part, make sure we read the results and potentially make sure they are valid
+
+  \todo fix bin mode - in current state, buffer read fails
+
+*/
+
 mtsDATAQSerial::mtsDATAQSerial(const std::string & name, const unsigned int portNumber):
     mtsTaskContinuous(name),
     mDataStateTable(1000, "Data")
@@ -38,7 +46,7 @@ void mtsDATAQSerial::Init(void)
 {
     mConfigured = false;
     mBufferIndex = 0;
-    mReadBinary = false;
+    mReadBinary = false; // false run float mode
 
     mInputs.AnalogInputs().SetSize(4);
     mInputs.DigitalInputs().SetSize(2);
@@ -46,23 +54,19 @@ void mtsDATAQSerial::Init(void)
     AddStateTable(&mDataStateTable);
     mDataStateTable.SetAutomaticAdvance(false);
     mDataStateTable.AddData(mInputs, "Inputs");
- 
+
     mtsInterfaceProvided * interfaceProvided = this->AddInterfaceProvided("DAQ");
     if (interfaceProvided) {
         interfaceProvided->AddCommandReadState(mDataStateTable, mInputs,
                                                "GetInputs");
+        interfaceProvided->AddCommandReadState(mDataStateTable, mDataStateTable.PeriodStats,
+                                               "GetPeriodStatistics");
     }
 }
 
 void mtsDATAQSerial::StartScanning(void)
 {
     if (!mIsScanning) {
-        // set to float mode and start scanning
-        if(mReadBinary) {
-            mSerialPort.Write("binary\r", 7);
-        } else {
-            mSerialPort.Write("float\r", 6);
-        }
         mSerialPort.Write("start\r", 6);
         mSerialPort.Flush();
         mIsScanning = true;
@@ -197,16 +201,26 @@ void mtsDATAQSerial::Startup(void)
 
             mConnected = true;
 
-            // set to asc mode to configure the scan sequence
-            // in current implementation, use all channels
-            mSerialPort.Write("asc\r", 4);
+            // in current implementation, configure the scanlist to use all channels
+            // analog inputs
             mSerialPort.Write("slist 0 x0\r", 11);
             mSerialPort.Write("slist 1 x1\r", 11);
             mSerialPort.Write("slist 2 x2\r", 11);
             mSerialPort.Write("slist 3 x3\r", 11);
-            mSerialPort.Write("slist 4 x8\r", 11);
-            mSerialPort.Write("slist 5 xffff\r", 14);
 
+            // complete the scan list based on float or binary mode
+            // there's also a "asc" mode but we don't see the point to report ADC counts
+            if (mReadBinary) {
+                // terminate scan list, in binary mode, digital inputs are reported along analog inputs using 2 of the 16 bits per channel
+                mSerialPort.Write("slist 4 xffff\r", 14);
+                mSerialPort.Write("bin\r", 4);
+            } else {
+                // digital inputs are separate in float more and need to be added to the scan list
+                mSerialPort.Write("slist 4 x8\r", 11);
+                // terminate scan list
+                mSerialPort.Write("slist 5 xffff\r", 14);
+                mSerialPort.Write("float\r", 6);
+            }
             // by default assume we should start scanning
             StartScanning();
         }
@@ -218,49 +232,61 @@ void mtsDATAQSerial::Run(void)
     ProcessQueuedCommands();
 
     if (mConnected && mIsScanning) {
-        char buffer[512];
-         int nbRead = mSerialPort.Read(buffer, 512);
+        if (mReadBinary) {
+            /*
+                Read byte
+                Find first byte that has B0 = 0, this is the start of the message
+                Read next 7 bytes, make sure for these 7 bytes, B0 is equal to 1
+                Use acquired 8 bytes in 4 sets of 2, each set represents a channel
+                
+                For digital input, pick one channel, say first 2 bytes and extract D1 = B2 and D0 = B1
 
-         for (int index = 0; index < nbRead; index++) {
-             if (buffer[index] == 's') {
-                 mBufferIndex = 0;
-                 mBuffer[mBufferIndex] = buffer[index];
-                 mBufferIndex++;
-             } else {
-                 if (mBufferIndex < sizeof(mBuffer) && index < sizeof(buffer)) {
-                     if (mBufferIndex != 0 && buffer[index] != '\0') {
-                         if (buffer[index] != '\r') {
-                             mBuffer[mBufferIndex] = buffer[index];
-                             mBufferIndex++;
-                         } else {
-                             int digitalValue = mBuffer[mBufferIndex - 1];
-                             mBuffer[mBufferIndex] = '\0';
-                             mDataStateTable.Start();
+                From first byte, get A0 to A4 and from second byte, get A5 to A11 then convert to float
+            */
 
-                             //std::cout << mBuffer << std::endl;
+        } else {
+            char buffer[512];
+            int nbRead = mSerialPort.Read(buffer, 512);
+            for (int index = 0; index < nbRead; index++) {
+                if (buffer[index] == 's') {
+                    mBufferIndex = 0;
+                    mBuffer[mBufferIndex] = buffer[index];
+                    mBufferIndex++;
+                } else {
+                    if (mBufferIndex < sizeof(mBuffer) && index < sizeof(buffer)) {
+                        if (mBufferIndex != 0 && buffer[index] != '\0') {
+                            if (buffer[index] != '\r') {
+                                mBuffer[mBufferIndex] = buffer[index];
+                                mBufferIndex++;
+                            } else {
+                                // digital inputs are that last element in buffer
+                                int digitalValue = mBuffer[mBufferIndex - 1];
+                                mBuffer[mBufferIndex] = '\0';
+                                mDataStateTable.Start();
 
-                             std::stringstream stream;
-                             stream << mBuffer;
+                                std::stringstream stream;
+                                stream << mBuffer;
 
-                             std::string header;
-                             stream >> header
-                                    >> mInputs.AnalogInputs()[0]
-                                    >> mInputs.AnalogInputs()[1]
-                                    >> mInputs.AnalogInputs()[2]
-                                    >> mInputs.AnalogInputs()[3];
+                                std::string header;
+                                stream >> header
+                                       >> mInputs.AnalogInputs()[0]
+                                       >> mInputs.AnalogInputs()[1]
+                                       >> mInputs.AnalogInputs()[2]
+                                       >> mInputs.AnalogInputs()[3];
 
-                             mInputs.DigitalInputs()[0] = digitalValue / 2;
-                             mInputs.DigitalInputs()[1] = digitalValue % 2;
+                                mInputs.DigitalInputs()[0] = digitalValue / 2;
+                                mInputs.DigitalInputs()[1] = digitalValue % 2;
 
-                             std::cout <<  "Data  : " << mInputs << std::endl;
-                             mDataStateTable.Advance();
-                         }
-                     }
-                 } else {
-                     std::cout <<"Error - Size of Buffers" << std::endl;
-                 }
-             }
-         }
+                                // std::cout <<  "Data  : " << mInputs << std::endl;
+                                mDataStateTable.Advance();
+                            }
+                        }
+                    } else {
+                        std::cerr << "#" << std::flush;
+                    }
+                }
+            }
+        }
     }
 }
 

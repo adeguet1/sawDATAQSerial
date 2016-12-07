@@ -88,14 +88,11 @@ int main(int argc, char * argv[])
 
     // create a Qt user interface if needed
     QApplication * application;
-    QTabWidget * tabWidget;
     mtsDATAQSerialQtWidget * sensorWidget;
     if (hasQt) {
         application = new QApplication(argc, argv);
-        tabWidget = new QTabWidget;
         sensorWidget = new mtsDATAQSerialQtWidget("DATAQ-GUI");
         sensorWidget->Configure();
-        tabWidget->addTab(sensorWidget, "DAQ");
         componentManager->AddComponent(sensorWidget);
         componentManager->Connect(sensorWidget->GetName(), "DAQ",
                                   sensor->GetName(), "DAQ");
@@ -119,7 +116,7 @@ int main(int argc, char * argv[])
     componentManager->StartAllAndWait(5.0 * cmn_s);
 
     if (hasQt) {
-        tabWidget->show();
+        sensorWidget->show();
         application->exec();
     } else {
         do {
