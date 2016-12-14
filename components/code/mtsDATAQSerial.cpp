@@ -18,14 +18,6 @@
 
 CMN_IMPLEMENT_SERVICES_DERIVED(mtsDATAQSerial, mtsTaskContinuous);
 
-
-/*
-  \todo After every Write in configuration part, make sure we read the results and potentially make sure they are valid
-
-  \todo fix bin mode - in current state, buffer read fails
-
-*/
-
 mtsDATAQSerial::mtsDATAQSerial(const std::string & name, const unsigned int portNumber):
     mtsTaskContinuous(name),
     mDataStateTable(1000, "Data")
@@ -46,7 +38,7 @@ void mtsDATAQSerial::Init(void)
 {
     mConfigured = false;
     mBufferIndex = 0;
-    mReadBinary = false; // false run float mode
+    mReadBinary = true; // false run float mode
 
     mInputs.AnalogInputs().SetSize(4);
     mInputs.DigitalInputs().SetSize(2);
@@ -207,6 +199,7 @@ void mtsDATAQSerial::Startup(void)
             mSerialPort.Write("slist 1 x1\r", 11);
             mSerialPort.Write("slist 2 x2\r", 11);
             mSerialPort.Write("slist 3 x3\r", 11);
+            
 
             // complete the scan list based on float or binary mode
             // there's also a "asc" mode but we don't see the point to report ADC counts
@@ -215,6 +208,9 @@ void mtsDATAQSerial::Startup(void)
                 mSerialPort.Write("slist 4 xffff\r", 14);
                 mSerialPort.Write("bin\r", 4);
             } else {
+                // in current implementation, configure the scanlist to use all channels
+
+
                 // digital inputs are separate in float more and need to be added to the scan list
                 mSerialPort.Write("slist 4 x8\r", 11);
                 // terminate scan list
@@ -243,6 +239,26 @@ void mtsDATAQSerial::Run(void)
 
                 From first byte, get A0 to A4 and from second byte, get A5 to A11 then convert to float
             */
+            int byte = 0xff;
+
+            char buffer[256];
+            unsigned int nbRead = mSerialPort.Read(buffer, 256);
+
+             for (int index = 0; index < nbRead; index++) {
+
+                // determine the number of bits needed ("sizeof" returns bytes)
+                int nbits = 8;
+                char s[nbits+1];  // +1 for '\0' terminator
+                s[nbits] = '\0';
+                unsigned int u = *(unsigned int*)&buffer[index];
+                int i;
+                unsigned int mask = 1 << (nbits-1); // fill in values right-to-left
+                for (i = 0; i < nbits; i++, mask >>= 1)
+                    s[i] = ((u & mask) != 0) + '0';
+                std::cout << s << std::endl;
+                // << " -  "<< s << std::endl;
+            }
+
 
         } else {
             char buffer[512];

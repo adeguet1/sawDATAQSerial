@@ -42,6 +42,9 @@ public:
     void Configure(const std::string & filename = "");
     void Startup(void);
     void Cleanup(void);
+    
+private slots:
+     void SlotPlotIndex(int newAxis);
 
 protected:
     virtual void timerEvent(QTimerEvent * event);

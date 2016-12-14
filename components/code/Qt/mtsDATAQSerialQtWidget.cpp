@@ -42,6 +42,7 @@ mtsDATAQSerialQtWidget::mtsDATAQSerialQtWidget(const std::string & componentName
     mtsComponent(componentName),
     TimerPeriodInMilliseconds(periodInSeconds * 1000) // Qt timers are in milliseconds
 {
+    PlotIndex = 0;
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("DAQ");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetInputs", DAQ.GetInputs);
@@ -101,9 +102,16 @@ void mtsDATAQSerialQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     QMIntervalStatistics->SetValue(IntervalStatistics);
 
     //plot ... look into Time.Now
-    int plotIndex = 0;
-    AnalogSignal->AppendPoint(vctDouble2(DAQ.Inputs.Timestamp(), DAQ.Inputs.AnalogInputs()[plotIndex]));
+  
+    AnalogSignal->AppendPoint(vctDouble2(DAQ.Inputs.Timestamp(), DAQ.Inputs.DigitalInputs()[PlotIndex]));
     QVPlot->update();
+}
+
+void mtsDATAQSerialQtWidget::SlotPlotIndex(int newAxis)
+{
+    PlotIndex = newAxis;
+    std::cout << "PI - " << PlotIndex << std::endl;
+    QVPlot->SetContinuousExpandYResetSlot();
 }
 
 void mtsDATAQSerialQtWidget::setupUi(void)
@@ -130,6 +138,10 @@ void mtsDATAQSerialQtWidget::setupUi(void)
     digitalLayout->addWidget(QVRDigitalInputsWidget);
     dataLayout->addLayout(digitalLayout);
 
+    QSBPlotIndex = new QSpinBox();
+    QSBPlotIndex->setRange(0, 2);
+    dataLayout->addWidget(QSBPlotIndex);
+
     // plot
     QVPlot = new vctPlot2DOpenGLQtWidget();
     vctPlot2DBase::Scale * scaleSignal = QVPlot->AddScale("signal");
@@ -147,7 +159,7 @@ void mtsDATAQSerialQtWidget::setupUi(void)
 
     // ..... more to add here
 
-    
+     connect(QSBPlotIndex, SIGNAL(valueChanged(int)), this, SLOT(SlotPlotIndex(int)));
 
     // ---- timing tab
     QMIntervalStatistics = new mtsQtWidgetIntervalStatistics();
