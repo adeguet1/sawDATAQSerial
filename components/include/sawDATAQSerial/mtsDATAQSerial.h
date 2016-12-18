@@ -15,7 +15,8 @@ http://www.cisst.org/cisst/license.txt.
 
 #ifndef _mtsDATAQSerial_h
 #define _mtsDATAQSerial_h
-
+#include <stdio.h>
+#include <stdlib.h>
 #include <cisstOSAbstraction/osaSerialPort.h>
 #include <cisstMultiTask/mtsTaskContinuous.h>
 #include <cisstParameterTypes/prmInputData.h>
@@ -52,7 +53,7 @@ class CISST_EXPORT mtsDATAQSerial: public mtsTaskContinuous {
     bool mConfigured;
     bool mConnected;
     bool mIsScanning;
-    bool mReadBinary; //true then read as binary false read as floats
+    bool mReadBinary = false; //true then read as binary false read as floats
     int mBufferIndex;
     char mBuffer[512];
 

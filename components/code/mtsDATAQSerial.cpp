@@ -38,7 +38,6 @@ void mtsDATAQSerial::Init(void)
 {
     mConfigured = false;
     mBufferIndex = 0;
-    mReadBinary = true; // false run float mode
 
     mInputs.AnalogInputs().SetSize(4);
     mInputs.DigitalInputs().SetSize(2);
@@ -205,7 +204,8 @@ void mtsDATAQSerial::Startup(void)
             // there's also a "asc" mode but we don't see the point to report ADC counts
             if (mReadBinary) {
                 // terminate scan list, in binary mode, digital inputs are reported along analog inputs using 2 of the 16 bits per channel
-                mSerialPort.Write("slist 4 xffff\r", 14);
+
+                //mSerialPort.Write("slist 4 xffff\r", 14); - do this and the data has an extra 2 binary inputs
                 mSerialPort.Write("bin\r", 4);
             } else {
                 // in current implementation, configure the scanlist to use all channels
@@ -239,27 +239,67 @@ void mtsDATAQSerial::Run(void)
 
                 From first byte, get A0 to A4 and from second byte, get A5 to A11 then convert to float
             */
-            int byte = 0xff;
 
-            char buffer[256];
-            unsigned int nbRead = mSerialPort.Read(buffer, 256);
+            char buffer[16];
+            int nbRead = mSerialPort.Read(buffer, 512);
 
-             for (int index = 0; index < nbRead; index++) {
 
-                // determine the number of bits needed ("sizeof" returns bytes)
-                int nbits = 8;
-                char s[nbits+1];  // +1 for '\0' terminator
-                s[nbits] = '\0';
-                unsigned int u = *(unsigned int*)&buffer[index];
-                int i;
-                unsigned int mask = 1 << (nbits-1); // fill in values right-to-left
-                for (i = 0; i < nbits; i++, mask >>= 1)
-                    s[i] = ((u & mask) != 0) + '0';
-                std::cout << s << std::endl;
-                // << " -  "<< s << std::endl;
+            int currentValue = 0;
+            int tempAnalogValue = 0;
+            int analogIndex = 0;
+            int analogValue = 0;
+            int digitalValues;
+            int restartAnalog;
+            double convertVolt;
+
+            for (int index = 0; index < nbRead; index++) {
+                currentValue = (int)buffer[index]; //note this is a 2's complement conversion
+
+                restartAnalog = currentValue & 1;
+                currentValue = currentValue >> 1;
+
+                if (index % 2 == 0) {
+                    if(restartAnalog == 0) {
+                        mDataStateTable.Advance();
+                        std ::cout << "----------start ------------" << std::endl;
+                        analogIndex = 0;
+                    } else {
+                        analogIndex ++;
+                    }
+                    //------do something with digital values ----------//
+                    digitalValues = (currentValue & 3);
+
+                    mInputs.DigitalInputs()[0] = digitalValues & 2;
+                    mInputs.DigitalInputs()[1] = digitalValues & 1;
+
+                    //do something with digital here
+
+                    tempAnalogValue = currentValue >> 2;
+                } else {
+                    analogValue = currentValue << 5;
+                    analogValue += tempAnalogValue;
+
+
+                    convertVolt = analogValue * 0.00488;
+                    std::cout <<" i "<< analogIndex << " - " << convertVolt << std::endl;
+                    mInputs.AnalogInputs()[analogIndex] = convertVolt;
+                }
+
+                    /*
+                    //----------delete later on (currently used for reference) -------//
+                    int nbits = 8;
+                    char s[nbits+1];  // +1 for '\0' terminator
+                    s[nbits] = '\0';
+                    unsigned int u = *(unsigned int*)&buffer[index];
+
+                    unsigned int mask = 1 << (nbits-1); // fill in values right-to-left
+                    for(int i = 0; i < nbits; i++, mask >>= 1) {
+                        s[i] = ((u & mask) != 0) + '0';
+                    }
+                    std::cout <<s<<std::endl;
+                    //----------------------------
+                    */
             }
-
-
         } else {
             char buffer[512];
             int nbRead = mSerialPort.Read(buffer, 512);
