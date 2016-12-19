@@ -46,6 +46,8 @@ public:
 private slots:
      void SlotPlotIndex(int newAxis);
 
+     
+
 protected:
     virtual void timerEvent(QTimerEvent * event);
     virtual void closeEvent(QCloseEvent * event);

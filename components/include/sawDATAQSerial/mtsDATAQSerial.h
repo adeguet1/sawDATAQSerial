@@ -42,6 +42,9 @@ class CISST_EXPORT mtsDATAQSerial: public mtsTaskContinuous {
     void Init(void); // Initialization (called from constructors)
     void StartScanning(void);
     void StopScanning(void);
+    void ReadBinary(void);
+    void ReadAscii(void);
+    std::string WriteAndCheck(const std::string &) ;
 
     // device info
     osaSerialPort mSerialPort;
@@ -49,11 +52,13 @@ class CISST_EXPORT mtsDATAQSerial: public mtsTaskContinuous {
     std::string mSerialNumber;
     int mFirmware;
 
+    int temp;
+
     // parsing
     bool mConfigured;
     bool mConnected;
     bool mIsScanning;
-    bool mReadBinary = false; //true then read as binary false read as floats
+    bool mReadBinary; //true then read as binary false read as floats (change and put in contstructor)
     int mBufferIndex;
     char mBuffer[512];
 

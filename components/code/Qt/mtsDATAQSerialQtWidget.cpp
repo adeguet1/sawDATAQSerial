@@ -138,10 +138,6 @@ void mtsDATAQSerialQtWidget::setupUi(void)
     digitalLayout->addWidget(QVRDigitalInputsWidget);
     dataLayout->addLayout(digitalLayout);
 
-    QSBPlotIndex = new QSpinBox();
-    QSBPlotIndex->setRange(0, 2);
-    dataLayout->addWidget(QSBPlotIndex);
-
     // plot
     QVPlot = new vctPlot2DOpenGLQtWidget();
     vctPlot2DBase::Scale * scaleSignal = QVPlot->AddScale("signal");
@@ -153,6 +149,10 @@ void mtsDATAQSerialQtWidget::setupUi(void)
     // ---- configuration tab 
     QWidget * configurationWidget = new QWidget();
     this->addTab(configurationWidget, "Configuration");
+
+    QSBPlotIndex = new QSpinBox();
+    QSBPlotIndex->setRange(0, 2);
+    dataLayout->addWidget(QSBPlotIndex);         
     
     QVBoxLayout * configurationLayout = new QVBoxLayout;
     configurationWidget->setLayout(configurationLayout);
