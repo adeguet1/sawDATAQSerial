@@ -44,7 +44,7 @@ class CISST_EXPORT mtsDATAQSerial: public mtsTaskContinuous {
     void StopScanning(void);
     void ReadBinary(void);
     void ReadAscii(void);
-    std::string WriteAndCheck(const std::string &) ;
+       std::string WriteAndCheck(const std::string &) ;
 
     // device info
     osaSerialPort mSerialPort;

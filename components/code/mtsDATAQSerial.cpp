@@ -136,7 +136,7 @@ std::string mtsDATAQSerial::WriteAndCheck(const std::string & read) {//change re
     std::string output = buffer;
 
     if (output.compare(0, read.size(), read) != 0) {
-        CMN_LOG_CLASS_INIT_ERROR << "Startup: failed to get answer for command `" << read << "`, received `"
+        CMN_LOG_CLASS_INIT_ERROR << "Failed to get answer for command `" << read << "`, received `"
                                  << output << "`" << std::endl;
 
     }
@@ -190,11 +190,11 @@ void mtsDATAQSerial::Startup(void)
 
             // check firmware revision
             read = WriteAndCheck("info 2");
-            if (read.compare(0, 6, "info 2") != 0) {
+            /*if (read.compare(0, 6, "info 2") != 0) {
                 CMN_LOG_CLASS_INIT_ERROR << "Startup: failed to get answer for command `info 2`, received ["
                                          << read << "]" << std::endl;
                 return;
-            }
+            }*/
             // extract model number
             std::stringstream stream;
             stream << std::hex << read[7] << read[8];
@@ -204,11 +204,11 @@ void mtsDATAQSerial::Startup(void)
 
             // check serial number
             read = WriteAndCheck("info 6");
-            if (read.compare(0, 6, "info 6") != 0) {
+            /*if (read.compare(0, 6, "info 6") != 0) {
                 CMN_LOG_CLASS_INIT_ERROR << "Startup: failed to get answer for command `info 6`, received ["
                                          << read << "]" << std::endl;
                 return;
-            }
+            }*/
 
             // serial number
             mSerialNumber = read.substr(7, nbRead - 10); // start after info 1 + space and last 2 digits are for internal use, not part of SN
@@ -258,9 +258,9 @@ void mtsDATAQSerial::Run(void)
 
 void mtsDATAQSerial::ReadBinary(void)
 {
-    char buffer[16];
+    char buffer[8];
     int nbRead = mSerialPort.Read(buffer, sizeof(buffer));
-    buffer[16] = '\0';
+    std::cout<< "aa "<<nbRead  << std::endl;
     char currentValue;
     int tempAnalogValue;
     int analogIndex = 0;
@@ -278,7 +278,7 @@ void mtsDATAQSerial::ReadBinary(void)
         if (index % 2 == 0) {
             if (syncBit == 0) {
                 mDataStateTable.Start();
-                // std ::cout << "----------start ------------" << std::endl;
+               // std ::cout << "----------start ------------" << std::endl;
                 analogIndex = 0;
             } else {
                 analogIndex ++;
@@ -290,16 +290,35 @@ void mtsDATAQSerial::ReadBinary(void)
             mInputs.DigitalInputs()[1] = digitalValues & 1;
 
             //do something with digital here
-
             tempAnalogValue = currentValue >> 2;
-        } else {
-            int temp = currentValue >> 6;
-            temp ^=1;
-            std::cout << "t - " << temp <<std::endl; 
-            analogValue = currentValue << 5;
-            analogValue += tempAnalogValue;
 
-            convertVolt = analogValue; //  * 0.00488;
+            //std::cout <<"tav "<<"c" <<" - "<<tempAnalogValue<<std::endl;
+
+
+        } else {
+            int value = currentValue & 63;
+            int value2 = currentValue >> 6;
+            int value3 = !value2;
+            int value4 = value3 << 6;
+            int currentValue = value + value4;
+                
+           
+            if(value2 + 1 == 0) { //positive
+                currentValue++;
+                analogValue = currentValue << 5;
+                analogValue += tempAnalogValue;
+
+            }else if(value2 == 0) { //negitive
+
+                currentValue++;
+                analogValue = currentValue << 5;
+                analogValue += tempAnalogValue;
+
+                int dValue = analogValue ^ 4095;
+                int value6 = dValue * -1;
+                analogValue = value6--;
+            }
+            convertVolt = analogValue * 0.00488;
             //std::cout <<" i "<< analogIndex << " - " << convertVolt << std::endl;
             mInputs.AnalogInputs()[analogIndex] = convertVolt;
 
@@ -309,7 +328,7 @@ void mtsDATAQSerial::ReadBinary(void)
         }
 
         //delete temp variable from .h and .c files
-
+/*
             //----------delete later on (currently used for reference) -------//
             int nbits = 8;
             char s[nbits+1];  // +1 for '\0' terminator
@@ -322,9 +341,7 @@ void mtsDATAQSerial::ReadBinary(void)
             }
             std::cout <<s<<std::endl;
             //----------------------------
-        
-
-
+  */      
     }
 
 }
