@@ -376,7 +376,7 @@ void mtsDATAQSerial::ReadAscii(void)
                                >> mInputs.AnalogInputs()[2]
                                >> mInputs.AnalogInputs()[3];
 
-                        //pasre in the digital values
+                        //parse in the digital values
                         mInputs.DigitalInputs()[0] = digitalValue / 2;
                         mInputs.DigitalInputs()[1] = digitalValue % 2;
 
