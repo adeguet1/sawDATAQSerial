@@ -44,7 +44,8 @@ class CISST_EXPORT mtsDATAQSerial: public mtsTaskContinuous {
     void StopScanning(void);
     void ReadBinary(void);
     void ReadAscii(void);
-       std::string WriteAndCheck(const std::string &) ;
+    //customized function so that when we read, we clear the serial port
+    std::string WriteAndCheck(const std::string &);
 
     // device info
     osaSerialPort mSerialPort;
@@ -55,12 +56,12 @@ class CISST_EXPORT mtsDATAQSerial: public mtsTaskContinuous {
     int temp;
 
     // parsing
-    bool mConfigured;
-    bool mConnected;
-    bool mIsScanning;
+    bool mConfigured; //true if the configuration of the device is okay
+    bool mConnected; //true if the device is connected
+    bool mIsScanning; //true if we are currently scanning
     bool mReadBinary; //true then read as binary false read as floats (change and put in contstructor)
-    int mBufferIndex;
-    char mBuffer[512];
+    int mBufferIndex; //where we currently are in the database
+    char mBuffer[512]; //used to keep track of the buffer
 
     // data
     mtsStateTable mDataStateTable;
