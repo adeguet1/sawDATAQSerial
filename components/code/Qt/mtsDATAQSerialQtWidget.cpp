@@ -101,42 +101,52 @@ void mtsDATAQSerialQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     GetPeriodStatistics(IntervalStatistics);
     QMIntervalStatistics->SetValue(IntervalStatistics);
 
-    //plot ... look into Time.Now
-  
-    AnalogSignal->AppendPoint(vctDouble2(DAQ.Inputs.Timestamp(), DAQ.Inputs.DigitalInputs()[PlotIndex]));
-    QVPlot->update();
+    // check if analog signals are provided
+    const int nbAnalogInputs = DAQ.Inputs.AnalogInputs().size();
+    if (nbAnalogInputs > 0) {
+        // check for new size
+        if (nbAnalogInputs != (QSBPlotIndex->maximum() + 1)) {
+            QSBPlotIndex->setMaximum(nbAnalogInputs - 1);
+            QSBPlotIndex->setEnabled(true);
+            PlotIndex = 0;
+        }
+        AnalogSignal->AppendPoint(vctDouble2(DAQ.Inputs.Timestamp(), DAQ.Inputs.AnalogInputs()[PlotIndex]));
+        QVPlot->update();
+    } else {
+        QSBPlotIndex->setMaximum(-1);
+        QSBPlotIndex->setEnabled(false);
+    }
 }
 
 void mtsDATAQSerialQtWidget::SlotPlotIndex(int newAxis)
 {
     PlotIndex = newAxis;
-    std::cout << "PI - " << PlotIndex << std::endl;
     QVPlot->SetContinuousExpandYResetSlot();
 }
 
 void mtsDATAQSerialQtWidget::setupUi(void)
 {
-    // ---- data tab 
+    // ---- data tab
     QWidget * dataWidget = new QWidget();
     this->addTab(dataWidget, "Data");
-    
+
     QVBoxLayout * dataLayout = new QVBoxLayout;
     dataWidget->setLayout(dataLayout);
 
     // text display
+    QHBoxLayout * digitalLayout = new QHBoxLayout;
+    QLabel * digitalLabel = new QLabel("Digital Signals");
+    digitalLayout->addWidget(digitalLabel);
+    QVRDigitalInputsWidget = new vctQtWidgetDynamicVectorBoolRead();
+    digitalLayout->addWidget(QVRDigitalInputsWidget);
+    dataLayout->addLayout(digitalLayout);
+
     QHBoxLayout * analogLayout = new QHBoxLayout;
     QLabel * analogLabel = new QLabel("Analog Signals");
     analogLayout->addWidget(analogLabel);
     QVRAnalogInputsWidget = new vctQtWidgetDynamicVectorDoubleRead();
     analogLayout->addWidget(QVRAnalogInputsWidget);
     dataLayout->addLayout(analogLayout);
-
-    QHBoxLayout * digitalLayout = new QHBoxLayout;
-    QLabel * digitalLabel = new QLabel("Digtal Signals");
-    digitalLayout->addWidget(digitalLabel);
-    QVRDigitalInputsWidget = new vctQtWidgetDynamicVectorBoolRead();
-    digitalLayout->addWidget(QVRDigitalInputsWidget);
-    dataLayout->addLayout(digitalLayout);
 
     // plot
     QVPlot = new vctPlot2DOpenGLQtWidget();
@@ -146,20 +156,19 @@ void mtsDATAQSerialQtWidget::setupUi(void)
     QVPlot->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding));
     dataLayout->addWidget(QVPlot);
 
-    // ---- configuration tab 
+    // ---- configuration tab
     QWidget * configurationWidget = new QWidget();
     this->addTab(configurationWidget, "Configuration");
 
     QSBPlotIndex = new QSpinBox();
-    QSBPlotIndex->setRange(0, 2);
-    dataLayout->addWidget(QSBPlotIndex);         
-    
+    QSBPlotIndex->setRange(0, -1);
+    QSBPlotIndex->setEnabled(false);
+    dataLayout->addWidget(QSBPlotIndex);
+
     QVBoxLayout * configurationLayout = new QVBoxLayout;
     configurationWidget->setLayout(configurationLayout);
 
-    // ..... more to add here
-
-     connect(QSBPlotIndex, SIGNAL(valueChanged(int)), this, SLOT(SlotPlotIndex(int)));
+    connect(QSBPlotIndex, SIGNAL(valueChanged(int)), this, SLOT(SlotPlotIndex(int)));
 
     // ---- timing tab
     QMIntervalStatistics = new mtsQtWidgetIntervalStatistics();

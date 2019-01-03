@@ -38,10 +38,7 @@ mtsDATAQSerial::mtsDATAQSerial(const std::string & name, const std::string & por
 void mtsDATAQSerial::Init(void)
 {
     mConfigured = false;
-    mBufferIndex = 0;
     mReadBinary = true;
-
-    temp = 0;
 
     //set the size of the analog and digital inputs un accordiance with the corrrect model
     //in this istnance it is the DATAQ DI-145
@@ -117,7 +114,8 @@ void mtsDATAQSerial::Configure(const std::string & filename)
 #endif
 }
 
-std::string mtsDATAQSerial::WriteAndCheck(const std::string & read) {//change read to std::string
+std::string mtsDATAQSerial::WriteAndCheck(const std::string & read)
+{
     //call this method when you want to write and then read in input to clear the buffer
 
     //write to mSerialPort the command
@@ -171,7 +169,7 @@ void mtsDATAQSerial::Startup(void)
                 nbRead = mSerialPort.Read(buffer, sizeof(buffer));
             } while (nbRead != 0);
 
-            //check manufacturer
+            // check manufacturer
             read = WriteAndCheck("info 0");
             expected = "info 0 DATAQ";
             if (read != expected) {
@@ -259,12 +257,8 @@ void mtsDATAQSerial::Run(void)
 
 void mtsDATAQSerial::ReadBinary(void)
 {
-    //read in data as binary
-
     char buffer[8];
     int nbRead = mSerialPort.Read(buffer, sizeof(buffer));
-
-
 
     char currentValue;
     int tempAnalogValue;
@@ -272,7 +266,6 @@ void mtsDATAQSerial::ReadBinary(void)
     int analogValue = 0;
     int digitalValues;
     char syncBit;
-    double convertVolt;
 
     //iterate throught evalues we have read in
     for (int index = 0; index < nbRead; index++) {
@@ -282,7 +275,7 @@ void mtsDATAQSerial::ReadBinary(void)
         currentValue = currentValue >> 1;
 
         if (index % 2 == 0) {
-            //find out if we are the sync bit if so we should start
+            // find out if we are the sync bit if so we should start
             if (syncBit == 0) {
                 mDataStateTable.Start();
                 analogIndex = 0;
@@ -290,7 +283,7 @@ void mtsDATAQSerial::ReadBinary(void)
                 analogIndex ++;
             }
 
-            //------get and parse the digital values
+            // get and parse the digital values
             digitalValues = (currentValue & 3);
             mInputs.DigitalInputs()[0] = digitalValues & 2;
             mInputs.DigitalInputs()[1] = digitalValues & 1;
@@ -301,51 +294,43 @@ void mtsDATAQSerial::ReadBinary(void)
             int value = currentValue & 63;
             int highBit = currentValue >> 6;
             int negateHighBit = !highBit;
-            int shiftHighBit = negateHighBit<< 6;
+            int shiftHighBit = negateHighBit << 6;
             int currentValue = value + shiftHighBit;
                 
            
             //handle 2's complement conversion from binary to integer
-            if(highBit + 1 == 0) { //positive
+            if (highBit + 1 == 0) { // positive
                 currentValue++;
                 analogValue = currentValue << 5;
                 analogValue += tempAnalogValue;
-
-            }else if(highBit == 0) { //negitive
-
+            } else if (highBit == 0) { // negative
                 currentValue++;
                 analogValue = currentValue << 5;
                 analogValue += tempAnalogValue;
-
                 int dValue = analogValue ^ 4095;
                 int value6 = dValue * -1;
                 analogValue = value6--;
             }
 
-            //convert to volts and parse in to database
-            convertVolt = analogValue * 0.00488;
-            mInputs.AnalogInputs()[analogIndex] = convertVolt;
+            // convert to volts and save
+            mInputs.AnalogInputs()[analogIndex] = analogValue * 0.00488;
 
-            //if we reach the end we should advance
+            // if we reach the end we should advance
             if (analogIndex == 3) {
                 mDataStateTable.Advance();
             }
         }
     }
-
 }
 
 
 void mtsDATAQSerial::ReadAscii(void)
 {
-    //read in data as ascii values
-
     char buffer[512];
     int nbRead = mSerialPort.Read(buffer, 512);
     for (int index = 0; index < nbRead; index++) {
-
         if (buffer[index] == 's') {
-            //if this is the start of the list, reset everything
+            // if this is the start of the list, reset everything
             mBufferIndex = 0;
             mBuffer[mBufferIndex] = buffer[index];
             mBufferIndex++;
@@ -359,13 +344,13 @@ void mtsDATAQSerial::ReadAscii(void)
                     } else {
                         // end of a row parse information
 
-                        //get the digital values
+                        // get the digital values
                         int digitalValue = mBuffer[mBufferIndex - 1];
                         mBuffer[mBufferIndex] = '\0';
 
                         mDataStateTable.Start();
 
-                        //parse in the analog values
+                        // parse in the analog values
                         std::stringstream stream;
                         stream << mBuffer;
 
@@ -376,10 +361,10 @@ void mtsDATAQSerial::ReadAscii(void)
                                >> mInputs.AnalogInputs()[2]
                                >> mInputs.AnalogInputs()[3];
 
-                        //parse in the digital values
+                        // parse in the digital values
                         mInputs.DigitalInputs()[0] = digitalValue / 2;
                         mInputs.DigitalInputs()[1] = digitalValue % 2;
-
+                        
                         mDataStateTable.Advance();
                     }
                 }
